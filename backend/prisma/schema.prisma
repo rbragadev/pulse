@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum KudosPostStatus {
+  ACTIVE
+  HIDDEN
+  REMOVED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  avatar       String?
+  googleId     String?  @unique
+  role         Role     @default(USER)
+  isActive     Boolean  @default(true)
+  departmentId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department    Department?  @relation(fields: [departmentId], references: [id])
+  kudosSent     KudosPost[]  @relation("KudosSent")
+  kudosReceived KudosPost[]  @relation("KudosReceived")
+  likes         KudosLike[]
+
+  @@map("users")
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+
+  @@map("departments")
+}
+
+model KudosCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  weight      Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  posts KudosPost[]
+  rule  PointRule?
+
+  @@map("kudos_categories")
+}
+
+model KudosPost {
+  id          String          @id @default(uuid())
+  message     String
+  authorId    String
+  recipientId String
+  categoryId  String
+  status      KudosPostStatus @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  author    User          @relation("KudosSent", fields: [authorId], references: [id])
+  recipient User          @relation("KudosReceived", fields: [recipientId], references: [id])
+  category  KudosCategory @relation(fields: [categoryId], references: [id])
+  likes     KudosLike[]
+
+  @@map("kudos_posts")
+}
+
+model KudosLike {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User      @relation(fields: [userId], references: [id])
+  post KudosPost @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@map("kudos_likes")
+}
+
+model PointRule {
+  id            String   @id @default(uuid())
+  categoryId    String   @unique
+  points        Int      @default(1)
+  weeklyLimit   Int      @default(10)
+  cooldownHours Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category KudosCategory @relation(fields: [categoryId], references: [id])
+
+  @@map("point_rules")
+}
