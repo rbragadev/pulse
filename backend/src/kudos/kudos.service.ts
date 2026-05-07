@@ -127,4 +127,73 @@ export class KudosService {
   deleteCategory(id: string) {
     return this.kudosRepository.deleteCategory(id);
   }
+
+  // ─── Reactions ──────────────────────────────────────────────────────────────
+
+  async toggleReaction(userId: string, postId: string, reactionType: string) {
+    const post = await this.kudosRepository.findById(postId);
+    if (!post) throw new NotFoundException('Post não encontrado');
+
+    const existing = await this.prisma.kudosReaction.findUnique({
+      where: { userId_postId_reactionType: { userId, postId, reactionType: reactionType as any } },
+    });
+
+    if (existing) {
+      await this.prisma.kudosReaction.delete({ where: { id: existing.id } });
+      return { reacted: false, reactionType };
+    }
+
+    await this.prisma.kudosReaction.create({ data: { userId, postId, reactionType: reactionType as any } });
+    return { reacted: true, reactionType };
+  }
+
+  async getReactions(postId: string, userId?: string) {
+    const reactions = await this.prisma.kudosReaction.groupBy({
+      by: ['reactionType'],
+      where: { postId },
+      _count: { id: true },
+    });
+
+    let myReactions: string[] = [];
+    if (userId) {
+      const mine = await this.prisma.kudosReaction.findMany({ where: { postId, userId } });
+      myReactions = mine.map((r) => r.reactionType);
+    }
+
+    return {
+      reactions: reactions.map((r) => ({ type: r.reactionType, count: r._count.id })),
+      myReactions,
+    };
+  }
+
+  // ─── Comments ───────────────────────────────────────────────────────────────
+
+  async getComments(postId: string) {
+    return this.prisma.kudosComment.findMany({
+      where: { postId },
+      include: { author: { select: { id: true, name: true, avatar: true, department: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async addComment(authorId: string, postId: string, message: string) {
+    const post = await this.kudosRepository.findById(postId);
+    if (!post) throw new NotFoundException('Post não encontrado');
+    return this.prisma.kudosComment.create({
+      data: { authorId, postId, message },
+      include: { author: { select: { id: true, name: true, avatar: true, department: true } } },
+    });
+  }
+
+  async deleteComment(userId: string, commentId: string) {
+    const comment = await this.prisma.kudosComment.findUnique({ where: { id: commentId } });
+    if (!comment) throw new NotFoundException('Comentário não encontrado');
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (comment.authorId !== userId && user?.role !== 'ADMIN') {
+      throw new ForbiddenException('Você não pode deletar este comentário');
+    }
+
+    return this.prisma.kudosComment.delete({ where: { id: commentId } });
+  }
 }

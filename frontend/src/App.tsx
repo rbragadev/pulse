@@ -6,6 +6,8 @@ import AppLayout from '@/components/layout/AppLayout';
 import FeedPage from '@/pages/FeedPage';
 import GalacticosPage from '@/pages/GalacticosPage';
 import ProfilePage from '@/pages/ProfilePage';
+import HallOfFamePage from '@/pages/HallOfFamePage';
+import BadgesPage from '@/pages/BadgesPage';
 import AdminLayout from '@/pages/admin/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminUsers from '@/pages/admin/AdminUsers';
@@ -15,12 +17,12 @@ import AdminKudos from '@/pages/admin/AdminKudos';
 import AdminRules from '@/pages/admin/AdminRules';
 import AdminAnalytics from '@/pages/admin/AdminAnalytics';
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+function PrivateRoute({ children }: { readonly children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
+function AdminRoute({ children }: { readonly children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (user?.role !== 'ADMIN') return <Navigate to="/feed" replace />;
@@ -45,6 +47,8 @@ export default function App() {
         <Route path="galacticos" element={<GalacticosPage />} />
         <Route path="profile/:id" element={<ProfilePage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="hall-of-fame" element={<HallOfFamePage />} />
+        <Route path="badges" element={<BadgesPage />} />
       </Route>
       <Route
         path="/admin"

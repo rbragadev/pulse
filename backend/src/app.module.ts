@@ -9,6 +9,10 @@ import { KudosModule } from './kudos/kudos.module';
 import { RankingModule } from './ranking/ranking.module';
 import { DepartmentsModule } from './departments/departments.module';
 import { AdminModule } from './admin/admin.module';
+import { BadgesModule } from './badges/badges.module';
+import { AchievementsModule } from './achievements/achievements.module';
+import { SeasonsModule } from './seasons/seasons.module';
+import { SocialProfileModule } from './social-profile/social-profile.module';
 
 @Module({
   imports: [
@@ -20,6 +24,10 @@ import { AdminModule } from './admin/admin.module';
     RankingModule,
     DepartmentsModule,
     AdminModule,
+    BadgesModule,
+    AchievementsModule,
+    SeasonsModule,
+    SocialProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

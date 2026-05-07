@@ -11,6 +11,8 @@ import {
   ScrollText,
   LogOut,
   Zap,
+  Trophy,
+  Award,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { cn, getInitials } from '@/lib/utils';
@@ -18,6 +20,8 @@ import { cn, getInitials } from '@/lib/utils';
 const navItems = [
   { to: '/feed', icon: Home, label: 'Feed' },
   { to: '/galacticos', icon: Star, label: 'Galácticos' },
+  { to: '/hall-of-fame', icon: Trophy, label: 'Hall da Fama' },
+  { to: '/badges', icon: Award, label: 'Badges' },
   { to: '/profile', icon: User, label: 'Meu Perfil' },
 ];
 

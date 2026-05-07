@@ -18,6 +18,28 @@ enum KudosPostStatus {
   REMOVED
 }
 
+enum BadgeRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum ReactionType {
+  FIRE
+  ROCKET
+  HEART
+  CLAP
+  BRAIN
+}
+
+enum VoteType {
+  TRUSTWORTHY
+  COOL
+  PROFESSIONAL
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -30,10 +52,19 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  department    Department?  @relation(fields: [departmentId], references: [id])
-  kudosSent     KudosPost[]  @relation("KudosSent")
-  kudosReceived KudosPost[]  @relation("KudosReceived")
+  department    Department?     @relation(fields: [departmentId], references: [id])
+  kudosSent     KudosPost[]     @relation("KudosSent")
+  kudosReceived KudosPost[]     @relation("KudosReceived")
   likes         KudosLike[]
+  reactions     KudosReaction[]
+  comments      KudosComment[]  @relation("CommentAuthor")
+  badges        UserBadge[]
+  achievements  UserAchievement[]
+  seasonRankings SeasonRanking[]
+  votesGiven    ProfileVote[]   @relation("VoteGiven")
+  votesReceived ProfileVote[]   @relation("VoteReceived")
+  visitsMade    ProfileVisit[]  @relation("VisitsMade")
+  visitsReceived ProfileVisit[] @relation("VisitsReceived")
 
   @@map("users")
 }
@@ -77,10 +108,12 @@ model KudosPost {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  author    User          @relation("KudosSent", fields: [authorId], references: [id])
-  recipient User          @relation("KudosReceived", fields: [recipientId], references: [id])
-  category  KudosCategory @relation(fields: [categoryId], references: [id])
+  author    User            @relation("KudosSent", fields: [authorId], references: [id])
+  recipient User            @relation("KudosReceived", fields: [recipientId], references: [id])
+  category  KudosCategory   @relation(fields: [categoryId], references: [id])
   likes     KudosLike[]
+  reactions KudosReaction[]
+  comments  KudosComment[]
 
   @@map("kudos_posts")
 }
@@ -110,4 +143,143 @@ model PointRule {
   category KudosCategory @relation(fields: [categoryId], references: [id])
 
   @@map("point_rules")
+}
+
+// ─── Gamification ─────────────────────────────────────────────────────────────
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  slug        String      @unique
+  description String
+  icon        String
+  color       String
+  rarity      BadgeRarity @default(COMMON)
+  createdAt   DateTime    @default(now())
+
+  users UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id         String   @id @default(uuid())
+  userId     String
+  badgeId    String
+  unlockedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model Achievement {
+  id             String   @id @default(uuid())
+  name           String   @unique
+  description    String
+  type           String
+  conditionValue Int      @default(1)
+  icon           String?
+  createdAt      DateTime @default(now())
+
+  users UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String    @id @default(uuid())
+  userId        String
+  achievementId String
+  progress      Int       @default(0)
+  completed     Boolean   @default(false)
+  completedAt   DateTime?
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model Season {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  startDate DateTime
+  endDate   DateTime
+  active    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  rankings SeasonRanking[]
+
+  @@map("seasons")
+}
+
+model SeasonRanking {
+  id       String @id @default(uuid())
+  seasonId String
+  userId   String
+  position Int
+  points   Int    @default(0)
+
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, userId])
+  @@map("season_rankings")
+}
+
+model KudosReaction {
+  id           String       @id @default(uuid())
+  userId       String
+  postId       String
+  reactionType ReactionType
+  createdAt    DateTime     @default(now())
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post KudosPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId, reactionType])
+  @@map("kudos_reactions")
+}
+
+model KudosComment {
+  id        String   @id @default(uuid())
+  postId    String
+  authorId  String
+  message   String
+  createdAt DateTime @default(now())
+
+  post   KudosPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User      @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("kudos_comments")
+}
+
+model ProfileVote {
+  id        String   @id @default(uuid())
+  voterId   String
+  targetId  String
+  type      VoteType
+  createdAt DateTime @default(now())
+
+  voter  User @relation("VoteGiven", fields: [voterId], references: [id], onDelete: Cascade)
+  target User @relation("VoteReceived", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([voterId, targetId, type])
+  @@map("profile_votes")
+}
+
+model ProfileVisit {
+  id        String   @id @default(uuid())
+  visitorId String
+  profileId String
+  visitedAt DateTime @default(now())
+
+  visitor User @relation("VisitsMade", fields: [visitorId], references: [id], onDelete: Cascade)
+  profile User @relation("VisitsReceived", fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("profile_visits")
 }

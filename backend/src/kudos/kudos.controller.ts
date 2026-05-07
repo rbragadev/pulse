@@ -46,6 +46,41 @@ export class KudosController {
     return this.kudosService.removeLike(user.id, postId);
   }
 
+  // Reactions
+  @Post(':id/react')
+  toggleReaction(
+    @CurrentUser() user: any,
+    @Param('id') postId: string,
+    @Body() body: { reactionType: string },
+  ) {
+    return this.kudosService.toggleReaction(user.id, postId, body.reactionType);
+  }
+
+  @Get(':id/reactions')
+  getReactions(@CurrentUser() user: any, @Param('id') postId: string) {
+    return this.kudosService.getReactions(postId, user.id);
+  }
+
+  // Comments
+  @Get(':id/comments')
+  getComments(@Param('id') postId: string) {
+    return this.kudosService.getComments(postId);
+  }
+
+  @Post(':id/comments')
+  addComment(
+    @CurrentUser() user: any,
+    @Param('id') postId: string,
+    @Body() body: { message: string },
+  ) {
+    return this.kudosService.addComment(user.id, postId, body.message);
+  }
+
+  @Delete(':id/comments/:commentId')
+  deleteComment(@CurrentUser() user: any, @Param('commentId') commentId: string) {
+    return this.kudosService.deleteComment(user.id, commentId);
+  }
+
   @Post('categories')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)

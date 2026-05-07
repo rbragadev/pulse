@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, BadgeRarity, ReactionType, VoteType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -12,10 +12,20 @@ function daysAgo(n: number): Date {
 async function main() {
   console.log('🌱 Iniciando seed completo...');
 
+  await prisma.profileVisit.deleteMany();
+  await prisma.profileVote.deleteMany();
+  await prisma.kudosComment.deleteMany();
+  await prisma.kudosReaction.deleteMany();
   await prisma.kudosLike.deleteMany();
   await prisma.kudosPost.deleteMany();
   await prisma.pointRule.deleteMany();
   await prisma.kudosCategory.deleteMany();
+  await prisma.userAchievement.deleteMany();
+  await prisma.achievement.deleteMany();
+  await prisma.userBadge.deleteMany();
+  await prisma.badge.deleteMany();
+  await prisma.seasonRanking.deleteMany();
+  await prisma.season.deleteMany();
   await prisma.user.deleteMany();
   await prisma.department.deleteMany();
 
@@ -227,7 +237,200 @@ async function main() {
 
   await prisma.kudosLike.createMany({ data: likePairs, skipDuplicates: true });
   console.log(`✅ ${likePairs.length} curtidas criadas.`);
-  console.log('\n🎉 Seed completo! Dados prontos para uso.');
+
+  // ─── Badges ──────────────────────────────────────────────────────────────
+  const [
+    risingStar, galactico, teamPlayer, inovador, lendaOtg, mvp, maisQuerido, mentor,
+  ] = await Promise.all([
+    prisma.badge.create({ data: { name: 'Rising Star', slug: 'rising-star', description: 'Novo talento que já brilha', icon: '🚀', color: '#6366f1', rarity: BadgeRarity.COMMON } }),
+    prisma.badge.create({ data: { name: 'Galáctico do Mês', slug: 'galactico-do-mes', description: 'Top 1 do ranking mensal', icon: '🔥', color: '#f59e0b', rarity: BadgeRarity.RARE } }),
+    prisma.badge.create({ data: { name: 'Team Player', slug: 'team-player', description: 'Parceiro incansável de equipe', icon: '🤝', color: '#22c55e', rarity: BadgeRarity.COMMON } }),
+    prisma.badge.create({ data: { name: 'Inovador', slug: 'inovador', description: 'Sempre traz ideias novas', icon: '💡', color: '#8b5cf6', rarity: BadgeRarity.UNCOMMON } }),
+    prisma.badge.create({ data: { name: 'Lenda OTG', slug: 'lenda-otg', description: 'Histórico impecável na empresa', icon: '🏆', color: '#ec4899', rarity: BadgeRarity.LEGENDARY } }),
+    prisma.badge.create({ data: { name: 'MVP', slug: 'mvp', description: 'Most Valuable Player da temporada', icon: '⚡', color: '#eab308', rarity: BadgeRarity.EPIC } }),
+    prisma.badge.create({ data: { name: 'Mais Querido', slug: 'mais-querido', description: 'O favorito de todos', icon: '❤️', color: '#ef4444', rarity: BadgeRarity.RARE } }),
+    prisma.badge.create({ data: { name: 'Mentor', slug: 'mentor', description: 'Eleva o nível de quem está ao redor', icon: '🧠', color: '#14b8a6', rarity: BadgeRarity.EPIC } }),
+  ]);
+  console.log('✅ Badges criados.');
+
+  // Award badges
+  await Promise.all([
+    prisma.userBadge.create({ data: { userId: raphael.id, badgeId: lendaOtg.id } }),
+    prisma.userBadge.create({ data: { userId: raphael.id, badgeId: mentor.id } }),
+    prisma.userBadge.create({ data: { userId: raphael.id, badgeId: inovador.id } }),
+    prisma.userBadge.create({ data: { userId: lucas.id, badgeId: risingStar.id } }),
+    prisma.userBadge.create({ data: { userId: lucas.id, badgeId: teamPlayer.id } }),
+    prisma.userBadge.create({ data: { userId: ana.id, badgeId: mvp.id } }),
+    prisma.userBadge.create({ data: { userId: ana.id, badgeId: maisQuerido.id } }),
+    prisma.userBadge.create({ data: { userId: carlos.id, badgeId: mentor.id } }),
+    prisma.userBadge.create({ data: { userId: carlos.id, badgeId: inovador.id } }),
+    prisma.userBadge.create({ data: { userId: gabriel.id, badgeId: galactico.id } }),
+    prisma.userBadge.create({ data: { userId: gabriel.id, badgeId: mvp.id } }),
+    prisma.userBadge.create({ data: { userId: amanda.id, badgeId: maisQuerido.id } }),
+    prisma.userBadge.create({ data: { userId: camila.id, badgeId: lendaOtg.id } }),
+    prisma.userBadge.create({ data: { userId: camila.id, badgeId: teamPlayer.id } }),
+    prisma.userBadge.create({ data: { userId: gustavo.id, badgeId: risingStar.id } }),
+    prisma.userBadge.create({ data: { userId: mateus.id, badgeId: inovador.id } }),
+    prisma.userBadge.create({ data: { userId: fernanda.id, badgeId: galactico.id } }),
+  ]);
+  console.log('✅ Badges atribuídas aos usuários.');
+
+  // ─── Achievements ─────────────────────────────────────────────────────────
+  const [ach10, ach5senders, ach20sent, ach5depts, ach50received] = await Promise.all([
+    prisma.achievement.create({ data: { name: '10 Kudos Recebidos', description: 'Recebeu 10 reconhecimentos', type: 'KUDOS_RECEIVED', conditionValue: 10, icon: '🌟' } }),
+    prisma.achievement.create({ data: { name: 'Popular!', description: 'Recebeu kudos de 5 pessoas diferentes', type: 'UNIQUE_SENDERS', conditionValue: 5, icon: '🎯' } }),
+    prisma.achievement.create({ data: { name: 'Generoso', description: 'Enviou 20 reconhecimentos', type: 'KUDOS_SENT', conditionValue: 20, icon: '🎁' } }),
+    prisma.achievement.create({ data: { name: 'Cross-Departamento', description: 'Recebeu kudos de 4 departamentos diferentes', type: 'UNIQUE_DEPARTMENTS', conditionValue: 4, icon: '🌐' } }),
+    prisma.achievement.create({ data: { name: 'Lenda Viva', description: 'Recebeu 50 reconhecimentos', type: 'KUDOS_RECEIVED', conditionValue: 50, icon: '👑' } }),
+  ]);
+  console.log('✅ Conquistas criadas.');
+
+  // Grant some achievements
+  await Promise.all([
+    prisma.userAchievement.create({ data: { userId: raphael.id, achievementId: ach10.id, progress: 4, completed: true, completedAt: daysAgo(20) } }),
+    prisma.userAchievement.create({ data: { userId: raphael.id, achievementId: ach5senders.id, progress: 5, completed: true, completedAt: daysAgo(15) } }),
+    prisma.userAchievement.create({ data: { userId: ana.id, achievementId: ach10.id, progress: 10, completed: true, completedAt: daysAgo(10) } }),
+    prisma.userAchievement.create({ data: { userId: ana.id, achievementId: ach5senders.id, progress: 5, completed: true, completedAt: daysAgo(8) } }),
+    prisma.userAchievement.create({ data: { userId: ana.id, achievementId: ach5depts.id, progress: 4, completed: true, completedAt: daysAgo(5) } }),
+    prisma.userAchievement.create({ data: { userId: lucas.id, achievementId: ach10.id, progress: 10, completed: true, completedAt: daysAgo(12) } }),
+    prisma.userAchievement.create({ data: { userId: carlos.id, achievementId: ach20sent.id, progress: 20, completed: true, completedAt: daysAgo(7) } }),
+    prisma.userAchievement.create({ data: { userId: gabriel.id, achievementId: ach50received.id, progress: 7, completed: false } }),
+    prisma.userAchievement.create({ data: { userId: camila.id, achievementId: ach10.id, progress: 10, completed: true, completedAt: daysAgo(18) } }),
+    prisma.userAchievement.create({ data: { userId: gustavo.id, achievementId: ach10.id, progress: 5, completed: false } }),
+  ]);
+  console.log('✅ Conquistas distribuídas.');
+
+  // ─── Seasons ─────────────────────────────────────────────────────────────
+  const seasonAbril = await prisma.season.create({
+    data: {
+      name: 'Temporada Abril 2026',
+      startDate: new Date('2026-04-01'),
+      endDate: new Date('2026-04-30'),
+      active: false,
+    },
+  });
+
+  const seasonMaio = await prisma.season.create({
+    data: {
+      name: 'Temporada Maio 2026',
+      startDate: new Date('2026-05-01'),
+      endDate: new Date('2026-05-31'),
+      active: true,
+    },
+  });
+
+  // Abril rankings (hall of fame)
+  await Promise.all([
+    prisma.seasonRanking.create({ data: { seasonId: seasonAbril.id, userId: gabriel.id, position: 1, points: 47 } }),
+    prisma.seasonRanking.create({ data: { seasonId: seasonAbril.id, userId: ana.id, position: 2, points: 38 } }),
+    prisma.seasonRanking.create({ data: { seasonId: seasonAbril.id, userId: lucas.id, position: 3, points: 31 } }),
+    prisma.seasonRanking.create({ data: { seasonId: seasonAbril.id, userId: amanda.id, position: 4, points: 22 } }),
+    prisma.seasonRanking.create({ data: { seasonId: seasonAbril.id, userId: carlos.id, position: 5, points: 19 } }),
+  ]);
+
+  // Maio rankings (current - partial)
+  await Promise.all([
+    prisma.seasonRanking.create({ data: { seasonId: seasonMaio.id, userId: ana.id, position: 1, points: 28 } }),
+    prisma.seasonRanking.create({ data: { seasonId: seasonMaio.id, userId: raphael.id, position: 2, points: 21 } }),
+    prisma.seasonRanking.create({ data: { seasonId: seasonMaio.id, userId: carlos.id, position: 3, points: 18 } }),
+    prisma.seasonRanking.create({ data: { seasonId: seasonMaio.id, userId: lucas.id, position: 4, points: 15 } }),
+    prisma.seasonRanking.create({ data: { seasonId: seasonMaio.id, userId: gustavo.id, position: 5, points: 12 } }),
+  ]);
+  console.log('✅ Temporadas criadas.');
+
+  // ─── Reactions ───────────────────────────────────────────────────────────
+  const reactionData: Array<{ userId: string; postId: string; reactionType: ReactionType }> = [];
+  const reactionTypes: ReactionType[] = ['FIRE', 'ROCKET', 'HEART', 'CLAP', 'BRAIN'];
+
+  createdPosts.slice(0, 25).forEach((post, i) => {
+    const reactors = all
+      .filter((u) => u.id !== post.authorId)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.floor(Math.random() * 5) + 2);
+
+    reactors.forEach((u, j) => {
+      const type = reactionTypes[(i + j) % reactionTypes.length];
+      if (!reactionData.some((r) => r.userId === u.id && r.postId === post.id && r.reactionType === type)) {
+        reactionData.push({ userId: u.id, postId: post.id, reactionType: type });
+      }
+    });
+  });
+
+  await prisma.kudosReaction.createMany({ data: reactionData, skipDuplicates: true });
+  console.log(`✅ ${reactionData.length} reações criadas.`);
+
+  // ─── Comments ────────────────────────────────────────────────────────────
+  const commentsData = [
+    { postId: createdPosts[0].id, authorId: mateus.id, message: 'Merecia muito esse reconhecimento! 🚀' },
+    { postId: createdPosts[0].id, authorId: ana.id, message: 'Concordo 100%! Lucas arrasou!' },
+    { postId: createdPosts[1].id, authorId: lucas.id, message: 'Ana é incrível mesmo, referência de discovery!' },
+    { postId: createdPosts[1].id, authorId: fernanda.id, message: '👏👏 muito merecido!' },
+    { postId: createdPosts[2].id, authorId: mateus.id, message: 'Aquele PR foi magistral, aprendi muito vendo o código!' },
+    { postId: createdPosts[3].id, authorId: juliana.id, message: 'A campanha ficou incrível! Orgulho da Fernanda 🔥' },
+    { postId: createdPosts[4].id, authorId: thiago.id, message: 'Pedro é o cara! Esse contrato foi histórico!' },
+    { postId: createdPosts[5].id, authorId: isabela.id, message: 'Camila sempre elevando o bar do onboarding 💙' },
+    { postId: createdPosts[6].id, authorId: gabriel.id, message: '60% de redução? Isso é resultado de verdade!' },
+    { postId: createdPosts[7].id, authorId: ana.id, message: 'Larissa é parceira demais. Exemplo pra toda a empresa!' },
+    { postId: createdPosts[10].id, authorId: carlos.id, message: 'Gabriel mentor top! Meus juniores cresceram muito com ele 🧠' },
+    { postId: createdPosts[11].id, authorId: rodrigo.id, message: 'Patricia salva vidas! Seria um baita erro sem ela.' },
+    { postId: createdPosts[15].id, authorId: camila.id, message: 'Isabela é a alma da cultura OTG ❤️' },
+    { postId: createdPosts[16].id, authorId: mateus.id, message: 'Gustavo pipeline pra sempre! Deploy em 3 min é vida 🚀' },
+  ];
+
+  await prisma.kudosComment.createMany({ data: commentsData, skipDuplicates: true });
+  console.log(`✅ ${commentsData.length} comentários criados.`);
+
+  // ─── Profile Votes ────────────────────────────────────────────────────────
+  const votePairs: Array<{ voterId: string; targetId: string; type: VoteType }> = [
+    { voterId: lucas.id, targetId: raphael.id, type: VoteType.TRUSTWORTHY },
+    { voterId: ana.id, targetId: raphael.id, type: VoteType.TRUSTWORTHY },
+    { voterId: carlos.id, targetId: raphael.id, type: VoteType.PROFESSIONAL },
+    { voterId: mateus.id, targetId: raphael.id, type: VoteType.COOL },
+    { voterId: gabriel.id, targetId: raphael.id, type: VoteType.PROFESSIONAL },
+    { voterId: raphael.id, targetId: lucas.id, type: VoteType.TRUSTWORTHY },
+    { voterId: carlos.id, targetId: lucas.id, type: VoteType.COOL },
+    { voterId: mateus.id, targetId: lucas.id, type: VoteType.PROFESSIONAL },
+    { voterId: raphael.id, targetId: ana.id, type: VoteType.PROFESSIONAL },
+    { voterId: lucas.id, targetId: ana.id, type: VoteType.TRUSTWORTHY },
+    { voterId: fernanda.id, targetId: ana.id, type: VoteType.COOL },
+    { voterId: mariana.id, targetId: ana.id, type: VoteType.TRUSTWORTHY },
+    { voterId: raphael.id, targetId: carlos.id, type: VoteType.PROFESSIONAL },
+    { voterId: lucas.id, targetId: carlos.id, type: VoteType.TRUSTWORTHY },
+    { voterId: mateus.id, targetId: carlos.id, type: VoteType.COOL },
+    { voterId: ana.id, targetId: gabriel.id, type: VoteType.PROFESSIONAL },
+    { voterId: lucas.id, targetId: gabriel.id, type: VoteType.TRUSTWORTHY },
+    { voterId: carlos.id, targetId: gabriel.id, type: VoteType.COOL },
+    { voterId: pedro.id, targetId: amanda.id, type: VoteType.PROFESSIONAL },
+    { voterId: thiago.id, targetId: amanda.id, type: VoteType.TRUSTWORTHY },
+    { voterId: fernanda.id, targetId: juliana.id, type: VoteType.COOL },
+    { voterId: isabela.id, targetId: camila.id, type: VoteType.TRUSTWORTHY },
+    { voterId: beatriz.id, targetId: camila.id, type: VoteType.PROFESSIONAL },
+  ];
+
+  await prisma.profileVote.createMany({ data: votePairs, skipDuplicates: true });
+  console.log(`✅ ${votePairs.length} votos de perfil criados.`);
+
+  // ─── Profile Visits ───────────────────────────────────────────────────────
+  const visitData = [
+    { visitorId: lucas.id, profileId: raphael.id },
+    { visitorId: ana.id, profileId: raphael.id },
+    { visitorId: carlos.id, profileId: raphael.id },
+    { visitorId: fernanda.id, profileId: raphael.id },
+    { visitorId: gabriel.id, profileId: ana.id },
+    { visitorId: lucas.id, profileId: ana.id },
+    { visitorId: mateus.id, profileId: ana.id },
+    { visitorId: raphael.id, profileId: lucas.id },
+    { visitorId: ana.id, profileId: carlos.id },
+    { visitorId: mateus.id, profileId: gabriel.id },
+    { visitorId: larissa.id, profileId: gabriel.id },
+    { visitorId: rodrigo.id, profileId: amanda.id },
+    { visitorId: pedro.id, profileId: thiago.id },
+  ];
+
+  await prisma.profileVisit.createMany({ data: visitData, skipDuplicates: false });
+  console.log(`✅ ${visitData.length} visitas de perfil criadas.`);
+
+  console.log('\n🎉 Seed Fase 3 completo! Gamificação ativa.');
   console.log(`   Admin: raphaelbraga@grupootg.com`);
 }
 
