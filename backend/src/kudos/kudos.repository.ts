@@ -6,7 +6,7 @@ const postInclude = {
   author: { include: { department: true } },
   recipient: { include: { department: true } },
   category: true,
-  _count: { select: { likes: true } },
+  _count: { select: { likes: true, comments: true } },
 };
 
 @Injectable()

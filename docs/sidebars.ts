@@ -19,6 +19,7 @@ const sidebars: SidebarsConfig = {
         'conceitos/conquistas',
         'conceitos/ranking',
         'conceitos/reputacao-social',
+        'conceitos/comunidades',
       ],
     },
     {
@@ -30,6 +31,7 @@ const sidebars: SidebarsConfig = {
         'fluxo-colaborador/criando-kudos',
         'fluxo-colaborador/interacoes',
         'fluxo-colaborador/perfil-e-conquistas',
+        'fluxo-colaborador/comunidades',
       ],
     },
     {
@@ -55,6 +57,7 @@ const sidebars: SidebarsConfig = {
         'regras-de-negocio/reputacao-social',
         'regras-de-negocio/badges',
         'regras-de-negocio/conquistas',
+        'regras-de-negocio/comunidades',
       ],
     },
     {
@@ -66,6 +69,7 @@ const sidebars: SidebarsConfig = {
         'guia-admin/gestao-categorias',
         'guia-admin/moderacao',
         'guia-admin/analytics',
+        'guia-admin/comunidades',
       ],
     },
     {

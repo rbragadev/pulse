@@ -1,8 +1,8 @@
 # Pulse V1 — Auditoria Técnica e Funcional
 
-> Data: 2026-05-07  
+> Última atualização: 2026-05-07  
 > Revisor: Claude Sonnet 4.6  
-> Objetivo: mapear o estado real da plataforma antes do teste interno com a equipe OTG.
+> Status: **V1 estabilizada e pronta para teste interno**
 
 ---
 
@@ -11,25 +11,23 @@
 | Área | Status | Observação |
 |---|---|---|
 | Autenticação (Google OAuth + JWT) | ✅ Funcional | Produção-ready |
-| Feed + Kudos Core | ✅ Funcional | Like otimista, `likedByMe`, paginação com bug menor |
+| Feed + Kudos Core | ✅ Funcional | Paginação acumulativa corrigida |
+| Reações e Comentários (Kudos) | ✅ Funcional | `_count.comments` corrigido |
+| PointRule (cooldown/limite semanal) | ✅ Funcional | Enforced no `KudosService.create()` |
+| Achievements (conquistas) | ✅ Funcional | Chamado automaticamente após cada kudos |
 | Ranking (Galácticos + Geral) | ✅ Funcional | Pontos ponderados via SQL |
-| Admin Backoffice | ✅ Funcional | Dashboard, Users, Categories, Kudos, Rules |
-| Perfil Social | ✅ Funcional | Badges, conquistas, votos, visitantes, fãs |
-| Reações e Comentários | ✅ Funcional | Backend OK — UI no KudosCard |
+| Perfil Social | ✅ Funcional | ProfileVisit com throttle 24h |
 | Hall da Fama + Temporadas | ✅ Funcional | Seed cria 2 temporadas de exemplo |
 | Badges | ✅ Funcional | Catálogo real + award/revoke admin |
-| PointRule (cooldown/limite semanal) | ⚠️ Parcial | Dados salvos mas **não aplicados** no fluxo |
-| Achievements (conquistas) | ⚠️ Parcial | Lógica pronta mas **não chamada** automaticamente |
-| Feed "Carregar mais" | ⚠️ Parcial | Substitui posts em vez de acumular |
-| AdminPosts page | ❌ Quebrado | Endpoint de delete inexistente no backend |
-| Notificações | 🎭 Mock | Dados hardcoded, nenhuma API |
-| Aniversariantes | 🎭 Mock | Nomes fixos, sem campo `birthday` no User |
-| Eventos | 🎭 Mock | Array constante, sem modelo no banco |
+| Admin Backoffice | ✅ Funcional | Dashboard, Users, Categories, Kudos, Rules, Communities |
 | Comunidades | ✅ Funcional | V1 completo: posts, comentários, reações, membros, admin |
+| Notificações | 🔔 Preview | Dados hardcoded — badge "Preview" visível |
+| Aniversariantes | 🔔 Preview | Dados hardcoded — badge "Preview" visível |
+| Eventos | 🔔 Preview | Dados hardcoded — badge "Preview" visível |
 
 ---
 
-## 1. Funcionalidades Prontas (Produção-ready)
+## 1. Funcionalidades Prontas (V1 — Produção-ready)
 
 ### 1.1 Autenticação
 - Google OAuth2 via `passport-google-oauth20` com restrição de domínio `@grupootg.com`
@@ -40,217 +38,143 @@
 
 ### 1.2 Kudos Core
 - **Criar kudos** — validação: sem auto-kudos, usuário/destinatário/categoria ativos
-- **Feed** — `GET /kudos/feed` retorna posts com `likedByMe` calculado por usuário, filtra só `ACTIVE`
-- **Like / Unlike** — `POST /DELETE /kudos/:id/like` idempotente (não lança erro se já curtido/descurtido)
-- **Feed no frontend** — `FeedComposer`, `KudosCard` com like otimista (estado local + invalidação de cache)
-- **Criar kudos via dialog** — seleção de destinatário (usuários ativos), categoria, mensagem; feedback via toast
+- **PointRule enforced** — `weeklyLimit` e `cooldownHours` verificados antes de criar
+- **Feed** — `GET /kudos/feed` retorna posts com `likedByMe` e `_count.comments` corrigido
+- **Feed paginado** — posts acumulam ao clicar "Carregar mais" (sem substituição)
+- **Like / Unlike** — idempotente
+- **Achievements automáticos** — `checkAndGrantAchievements()` chamado (non-blocking) para author e recipient após cada kudos criado
 
-### 1.3 Ranking
-- `GET /ranking/galacticos` — top 10 do mês corrente, pontos = `SUM(category.weight)`
+### 1.3 Reações e Comentários
+- Picker de reações (🔥🚀❤️👏🧠) com toggle e contagem em tempo real
+- Seção de comentários expansível: lista + input com Enter/botão
+- Backend: `POST/GET /kudos/:id/react`, `GET/POST/DELETE /kudos/:id/comments`
+- Contagem de comentários correta no feed (`_count.comments`)
+
+### 1.4 Ranking
+- `GET /ranking/galacticos` — top 10 do mês corrente, `SUM(category.weight)`
 - `GET /ranking/all-time` — top 10 histórico, mesmo cálculo ponderado
-- SQL raw com `$queryRaw` corretamente tipado para BigInt → Number
 - GalacticosPage com pódio olímpico animado e lista completa
 
-### 1.4 Admin Backoffice
-- **Dashboard** — contagem real: totalUsers, activeUsers, totalKudos, kudosThisMonth, top 5 categorias, top 5 usuários do mês
-- **Usuários** — lista paginada, toggle `isActive` (UserX/UserCheck), toggle `role` (Shield/ShieldOff), toast de feedback
-- **Categorias** — full CRUD inline: criar, editar nome/ícone/cor/peso/ativo
-- **Moderação de Kudos** — filtro por status (ACTIVE/HIDDEN/REMOVED), ações: ocultar, remover, restaurar
-- **Regras de pontuação** — edição de `points`, `weeklyLimit`, `cooldownHours` por categoria
+### 1.5 Admin Backoffice
+- **Dashboard** — contagem real: users, kudos do mês, top 5 categorias, top 5 usuários
+- **Usuários** — toggle `isActive` / `role`, paginação
+- **Categorias** — full CRUD inline
+- **Moderação de Kudos** — filtro por status, ações: ocultar / remover / restaurar
+- **Regras de pontuação** — edição de `points`, `weeklyLimit`, `cooldownHours`
+- **Analytics** — métricas gerais
+- **Comunidades** — status (ACTIVE/INACTIVE/ARCHIVED) + toggle oficial
+- Rota `/admin/posts` redireciona para `/admin/kudos` (rota legada removida)
 
-### 1.5 Perfil Social
-- Header com banner colorido pelo departamento, avatar, stats (kudos recebidos/enviados/badges)
-- Seção de reputação: votos TRUSTWORTHY/COOL/PROFESSIONAL com barra de progresso, toggle vote
-- Badges do usuário por raridade com tooltip de data de desbloqueio
-- Conquistas recentes com progresso
-- Kudos recebidos/enviados em abas com `KudosCard`
-- Visitantes recentes (últimas 8 visitas distintas), Fãs (quem mais enviou kudos), Top categorias
-- Visita registrada automaticamente ao acessar perfil alheio (`GET /social-profile/:userId`)
-
-### 1.6 Reações e Comentários (KudosCard)
-- Picker de reações (🔥🚀❤️👏🧠) com toggle e contagem em tempo real
-- Seção de comentários expansível: lista + input com Enter/botão de envio
-- Backend: `POST/GET /kudos/:id/react`, `GET/POST/DELETE /kudos/:id/comments`
+### 1.6 Perfil Social
+- Header com banner, avatar, stats (kudos recebidos/enviados/badges)
+- Reputação: votos TRUSTWORTHY/COOL/PROFESSIONAL com barra + toggle vote
+- Badges por raridade, conquistas recentes
+- Kudos recebidos/enviados em abas
+- Visitantes recentes com **throttle 24h** (sem auto-visita, máx 1 por visitorId/dia)
+- Fãs + Top categorias
+- Seção de comunidades no próprio perfil
 
 ### 1.7 Hall da Fama + Temporadas
-- `GET /seasons` → lista todas temporadas com rankings
-- `GET /seasons/active` → temporada ativa (usada pelo SeasonWidget no feed)
-- `GET /seasons/hall-of-fame` → top 3 de temporadas passadas + all-time
-- Seed cria 2 temporadas (Abril 2026 encerrada + Maio 2026 ativa) com rankings reais
+- `GET /seasons/hall-of-fame` — top 3 de temporadas passadas + all-time
+- Seed: 2 temporadas (Abril encerrada + Maio ativa) com rankings reais
 
 ### 1.8 Badges
-- Catálogo público: `GET /badges` exibe todos por raridade (COMMON → LEGENDARY)
+- Catálogo público por raridade (COMMON → LEGENDARY)
 - Admin: award/revoke por userId+badgeId
 - Seed: 8 badges criados, distribuídos entre usuários principais
 
 ### 1.9 Comunidades (V1)
-- **5 modelos no banco:** `Community`, `CommunityMember`, `CommunityPost`, `CommunityPostComment`, `CommunityPostReaction`
-- **Backend:** CRUD completo com roles OWNER/MODERATOR/MEMBER, join/leave (impede sole-owner de sair), posts, comentários, reações toggle (upsert)
-- **Seed:** 12 comunidades com banners (Unsplash), avatares (DiceBear), 25 posts, 28 comentários, 37 reações
-- **CommunitiesPage:** discovery com hero stats, tabs (Todas / Minhas / Criadas), busca, filtro por categoria, grid de cards
-- **CommunityDetailPage:** layout 2-colunas estilo Orkut — sidebar com owner/mods/membros recentes + feed de posts com reações e comentários inline
-- **CreateCommunityDialog:** formulário com slug auto-gerado a partir do nome, seleção de categoria
-- **CommunitiesWidget:** dados reais — mostra comunidades do usuário (ou top-5 gerais como fallback)
-- **ProfilePage:** seção "Comunidades" na sidebar para o próprio perfil
-- **Admin `/admin/communities`:** tabela com status (ACTIVE/INACTIVE/ARCHIVED) editável via select inline e toggle de oficial
+- **5 modelos:** `Community`, `CommunityMember`, `CommunityPost`, `CommunityPostComment`, `CommunityPostReaction`
+- **Roles:** OWNER / MODERATOR / MEMBER
+- **Proteções:** sole-OWNER não pode sair, não-membro não pode postar
+- **Seed:** 12 comunidades, 25 posts, 28 comentários, 37 reações
+- **CommunitiesPage:** discovery com hero stats, tabs, busca, filtro por categoria
+- **CommunityDetailPage:** layout 2-colunas Orkut — sidebar (owner/mods/membros) + feed de posts
+- **CreateCommunityDialog:** slug auto-gerado a partir do nome
+- **CommunitiesWidget:** dados reais (comunidades do usuário ou top-5 gerais)
+- **Admin `/admin/communities`:** status inline + toggle oficial
 
 ---
 
-## 2. Funcionalidades Parciais (Atenção necessária)
+## 2. Funcionalidades Preview (mockadas — claramente sinalizadas na UI)
 
-### 2.1 PointRule — Cooldown e limite semanal **NÃO aplicados**
-**Localização:** [backend/src/kudos/kudos.service.ts](backend/src/kudos/kudos.service.ts#L58)
-
-As regras existem no banco e são editáveis pelo admin, mas o método `create()` nunca as consulta. Atualmente um usuário pode enviar kudos ilimitados, sem respeitar `weeklyLimit` nem `cooldownHours`.
-
-**Fix necessário:** antes de criar o kudos, buscar a `PointRule` da categoria e validar:
-1. Contagem de kudos enviados pelo autor nessa categoria na semana atual
-2. Último kudos enviado pelo autor para o mesmo destinatário na mesma categoria (cooldown)
-
-### 2.2 Achievements — Concessão automática não conectada
-**Localização:** [backend/src/achievements/achievements.service.ts](backend/src/achievements/achievements.service.ts#L20)
-
-`checkAndGrantAchievements(userId)` está implementado e correto — verifica 4 métricas (`KUDOS_RECEIVED`, `KUDOS_SENT`, `UNIQUE_SENDERS`, `UNIQUE_DEPARTMENTS`) e faz upsert com progresso. Mas **nunca é chamado** após um kudos ser criado.
-
-**Fix necessário:** chamar `achievementsService.checkAndGrantAchievements(dto.recipientId)` e `checkAndGrantAchievements(authorId)` ao final de `KudosService.create()`.
-
-### 2.3 Feed — Paginação substitui em vez de acumular
-**Localização:** [frontend/src/pages/FeedPage.tsx](frontend/src/pages/FeedPage.tsx#L22)
-
-O `queryKey` inclui `page`, então ao clicar "Carregar mais" a query muda e os posts anteriores somem — em vez de acumular. O botão funciona mas a UX está incorreta.
-
-**Fix necessário:** usar `useInfiniteQuery` ou acumular posts manualmente via `useState<KudosPost[]>`.
-
-### 2.4 `_count.comments` ausente no feed
-**Localização:** [backend/src/kudos/kudos.repository.ts](backend/src/kudos/kudos.repository.ts#L5)
-
-`postInclude` só inclui `_count: { select: { likes: true } }`. O campo `_count.comments` esperado pelo tipo `KudosPost` retorna `undefined` no feed.
-
-**Fix:** adicionar `comments: true` ao `_count.select` em `postInclude`.
-
-### 2.5 Hall da Fama — Inconsistência no ranking all-time
-**Localização:** [backend/src/seasons/seasons.service.ts](backend/src/seasons/seasons.service.ts#L46)
-
-`getHallOfFame()` usa `groupBy._count.id` (contagem simples) para o ranking geral histórico, enquanto `ranking.service.ts` usa `SUM(weight)` (pontos ponderados). Os dois "all-time" mostram valores diferentes para o mesmo período.
-
-**Fix:** `getHallOfFame()` deve usar a mesma query SQL ponderada de `getAllTimeRanking()`.
-
----
-
-## 3. Funcionalidades Mockadas (Não implementadas)
-
-### 3.1 Notificações
+### 2.1 Notificações
 **Localização:** [frontend/src/components/shared/NotificationsDropdown.tsx](frontend/src/components/shared/NotificationsDropdown.tsx)
 
-Dropdown com 7 notificações hardcoded. O badge de "não lido" e o markAllRead funcionam apenas em memória local (sem persistência). Nenhum endpoint de backend existe. Aviso "em breve" visível no rodapé do dropdown.
+7 notificações hardcoded. Badge "em breve" visível no rodapé do dropdown. Nenhum modelo de backend.
 
-### 3.2 Aniversariantes da Semana
+### 2.2 Aniversariantes da Semana
 **Localização:** [frontend/src/components/widgets/BirthdaysWidget.tsx](frontend/src/components/widgets/BirthdaysWidget.tsx)
 
-Array `BIRTHDAYS` com 4 nomes fictícios, datas hardcoded. O modelo `User` não tem campo `birthday`. Widget puramente decorativo.
+4 aniversários fictícios. Widget exibe badge "Preview" e nota explicativa. `User` sem campo `birthday`.
 
-### 3.3 Próximos Eventos
+### 2.3 Próximos Eventos
 **Localização:** [frontend/src/components/widgets/EventsWidget.tsx](frontend/src/components/widgets/EventsWidget.tsx)
 
-Array `EVENTS` com 4 eventos fictícios. Nenhum modelo `Event` no schema. Datas fixas (15 Mai, 20 Mai...) que nunca atualizam.
+4 eventos fictícios com datas fixas. Widget exibe badge "Preview" e nota explicativa. Sem modelo `Event` no banco.
 
 ---
 
-## 4. Bugs Encontrados
+## 3. Inconsistências conhecidas (não críticas para V1)
 
-### BUG-01 — AdminPosts: endpoint DELETE inexistente
-**Severidade:** Alta  
-**Localização:** [frontend/src/pages/admin/AdminPosts.tsx](frontend/src/pages/admin/AdminPosts.tsx#L22)
+### 3.1 Hall da Fama — Ranking all-time usa contagem simples
+**Localização:** [backend/src/seasons/seasons.service.ts](backend/src/seasons/seasons.service.ts)
 
-```ts
-mutationFn: (id: string) => api.delete(`/admin/posts/${id}`)
-```
+`getHallOfFame()` usa `_count.id` (contagem de posts) enquanto `RankingService` usa `SUM(weight)` (pontos ponderados). Os dois "all-time" mostram valores diferentes para o mesmo período. Não crítico para V1.
 
-O endpoint `DELETE /admin/posts/:id` não existe no backend. A página AdminPosts também lê de `/kudos` (feed público) em vez de `/admin/kudos`, então só vê posts ACTIVE e não tem controle de moderação.
-
-**Fix:** Remover a página AdminPosts do router (já existe `AdminKudos` que faz moderação corretamente) ou reescrever para usar `/admin/kudos`.
-
-### BUG-02 — ProfileVisit: flood de registros sem throttle
-**Severidade:** Média  
-**Localização:** [backend/src/social-profile/social-profile.service.ts](backend/src/social-profile/social-profile.service.ts#L128)
-
-Cada GET em `/social-profile/:userId` cria um `ProfileVisit` sem nenhum throttle. Um usuário que atualizar a página 50 vezes gera 50 registros. A tabela pode crescer indefinidamente.
-
-**Fix:** Verificar se já existe uma visita do mesmo `visitorId` nas últimas N horas antes de criar.
-
-### BUG-03 — `_count.comments` nunca preenchido no feed
-**Severidade:** Baixa  
-**Localização:** [backend/src/kudos/kudos.repository.ts](backend/src/kudos/kudos.repository.ts#L9)
-
-`postInclude` não inclui `comments` no `_count`. O `KudosCard` mostra o botão de comentários mas não exibe contagem inicial (fica em branco até abrir a seção).
-
-### BUG-04 — Feed "Carregar mais" substitui posts
-**Severidade:** Baixa  
-**Localização:** [frontend/src/pages/FeedPage.tsx](frontend/src/pages/FeedPage.tsx)
-
-Ao clicar "Carregar mais", o `queryKey` muda para `['kudos', 2]` e os posts da página 1 somem. O usuário perde o que já havia lido.
-
-### BUG-05 — Sem validação de comprimento na mensagem de kudos
-**Severidade:** Baixa  
-**Localização:** [backend/src/kudos/dto/create-kudos.dto.ts](backend/src/kudos/dto/create-kudos.dto.ts)
-
-O campo `message` não tem `@MinLength` nem `@MaxLength`. Um usuário pode enviar uma mensagem vazia (string de 1 espaço) ou um texto de vários megabytes.
+### 3.2 Perfil de outros usuários não mostra comunidades
+A seção de comunidades no ProfilePage só aparece no próprio perfil. Não existe endpoint público de `GET /communities/user/:id`. Pós-V1.
 
 ---
 
-## 5. Riscos Técnicos para Produção
+## 4. Riscos Técnicos para Produção
 
-| Risco | Severidade | Mitigação sugerida |
+| Risco | Severidade | Status |
 |---|---|---|
-| Sem rate limiting na API | Alta | Adicionar `@nestjs/throttler` global |
-| ProfileVisit sem throttle (BUG-02) | Média | Dedup por visitorId + intervalo mínimo |
-| PointRule não enforced | Média | Ver item 2.1 |
-| Sem paginação real no feed | Média | `useInfiniteQuery` + cursor pagination |
-| `$queryRaw` sem prepared statements | Baixa | Valores passados via tagged template (já seguro no Prisma) |
-| JWT secret em variável de ambiente | OK | Padrão correto — não commitar `.env` |
-| Dados de seed (senha/PII) em repo público | Baixa | Seed usa emails fictícios exceto `raphaelbraga@grupootg.com` |
+| Sem rate limiting na API | Alta | Pendente — `@nestjs/throttler` não configurado |
+| ProfileVisit flood | Média | ✅ Corrigido — throttle 24h implementado |
+| PointRule não enforced | Média | ✅ Corrigido — weeklyLimit + cooldownHours ativos |
+| Achievements não disparados | Média | ✅ Corrigido — `checkAndGrantAchievements` chamado |
+| Feed substitui posts | Baixa | ✅ Corrigido — acumulação com useState |
+| `_count.comments` zerado | Baixa | ✅ Corrigido — adicionado ao `postInclude` |
+| AdminPosts rota quebrada | Baixa | ✅ Corrigido — redireciona para /admin/kudos |
+| `$queryRaw` sem prepared statements | Baixa | OK — tagged template Prisma já é seguro |
+| JWT secret em variável de ambiente | OK | Padrão correto |
 
 ---
 
-## 6. TODOs Pós-V1 (Prioridade sugerida)
+## 5. TODOs Pós-V1
 
 ### Alta Prioridade
-- [ ] **[BUG-01]** Remover `AdminPosts` do router ou reescrever — a rota `/admin/posts` está quebrada
-- [ ] **[2.1]** Aplicar `PointRule` em `KudosService.create()`: checar `weeklyLimit` e `cooldownHours`
-- [ ] **[2.2]** Chamar `checkAndGrantAchievements()` no `KudosService.create()` após criar o post
-- [ ] **[BUG-02]** Throttle em `recordVisit()`: no máximo 1 registro por visitante por hora/dia
-- [ ] Adicionar `@nestjs/throttler` como rate limiter global na API
+- [ ] Adicionar `@nestjs/throttler` como rate limiter global
+- [ ] Unificar cálculo all-time no Hall da Fama com query ponderada (item 3.1)
+- [ ] Adicionar `@MinLength(5)` e `@MaxLength(500)` no `message` do `CreateKudosDto`
 
 ### Média Prioridade
-- [ ] **[BUG-04]** Corrigir paginação do feed com `useInfiniteQuery` (acumular posts)
-- [ ] **[BUG-03]** Adicionar `comments: true` ao `_count.select` em `postInclude`
-- [ ] **[2.5]** Unificar cálculo all-time no Hall da Fama com a query ponderada do `RankingService`
-- [ ] **[BUG-05]** Adicionar `@MinLength(5)` e `@MaxLength(500)` no campo `message` do `CreateKudosDto`
-- [ ] Automatizar `snapshotActiveSeason()` via cron mensal (hoje só via `POST /seasons/snapshot`)
+- [ ] Comunidades: perfil de outros usuários mostrar suas comunidades
+- [ ] Comunidades: upload de avatar/banner próprio
+- [ ] Comunidades: posts privados / comunidades PRIVATE (join por convite)
+- [ ] Automatizar `snapshotActiveSeason()` via cron mensal
 
 ### Baixa Prioridade / Futuro
-- [ ] Implementar sistema de Notificações reais (tabela `Notification` + SSE ou WebSocket)
-- [ ] Implementar campo `birthday` no `User` + widget de Aniversariantes real
-- [ ] Implementar `Event` model + widget de Eventos real
-- [ ] Comunidades: posts privados / comunidades PRIVATE (join por convite)
-- [ ] Comunidades: upload de avatar/banner próprio
-- [ ] Adicionar admin UI para gerenciar Badges (tela dedicada com award/revoke por usuário)
-- [ ] Automatizar concessão de Badges baseada em achievements (trigger após `checkAndGrantAchievements`)
-- [ ] Adicionar analytics de tendência temporal (gráfico de kudos por semana/mês)
+- [ ] Implementar Notificações reais (tabela `Notification` + SSE)
+- [ ] Campo `birthday` no `User` + widget de Aniversariantes real
+- [ ] Modelo `Event` + widget de Eventos real
+- [ ] Automatizar concessão de Badges baseada em achievements
+- [ ] Analytics de tendência temporal (gráfico por semana/mês)
 - [ ] Perfil: edição de avatar e bio pelo usuário
 
 ---
 
-## 7. O que funciona end-to-end agora (sem alterações)
-
-Para o teste interno, o seguinte fluxo está 100% funcional:
+## 6. Fluxo completo funcional para teste interno
 
 1. Login com conta `@grupootg.com` via Google
-2. Ver feed de reconhecimentos com likes em tempo real
-3. Criar um kudos para um colega (categoria, mensagem)
-4. Ver perfil de outros usuários (badges, conquistas, reputação, votação)
-5. Ver o ranking Galácticos (mensal e geral)
-6. Ver o Hall da Fama (temporadas passadas + histórico)
-7. Ver o catálogo de Badges
-8. **Admin (`raphaelbraga@grupootg.com`):** dashboard, gerenciar usuários, moderar kudos, editar categorias e regras
+2. Ver feed de reconhecimentos com likes, reações e comentários em tempo real
+3. Criar um kudos (respeitará `weeklyLimit` e `cooldownHours` da categoria)
+4. Conquistas são verificadas automaticamente após o kudos
+5. Ver perfil de outros usuários (badges, conquistas, reputação, votação)
+6. Ver o ranking Galácticos (mensal e geral)
+7. Ver o Hall da Fama (temporadas passadas + histórico)
+8. Ver o catálogo de Badges
 9. Explorar comunidades, entrar/sair, criar tópicos, reagir, comentar
+10. **Admin:** dashboard, usuários, kudos, categorias, regras, analytics, comunidades

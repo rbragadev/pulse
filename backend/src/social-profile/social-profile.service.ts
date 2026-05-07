@@ -127,6 +127,11 @@ export class SocialProfileService {
 
   async recordVisit(visitorId: string, profileId: string) {
     if (visitorId === profileId) return;
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recent = await this.prisma.profileVisit.findFirst({
+      where: { visitorId, profileId, visitedAt: { gte: since } },
+    });
+    if (recent) return;
     await this.prisma.profileVisit.create({ data: { visitorId, profileId } });
   }
 }

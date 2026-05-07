@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageSquare } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import api from '@/lib/api';
 import KudosCard from '@/components/shared/KudosCard';
@@ -16,16 +16,33 @@ import { KudosPost } from '@/types';
 
 export default function FeedPage() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [allPosts, setAllPosts] = useState<KudosPost[]>([]);
+  const [total, setTotal] = useState(0);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['kudos', page],
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['kudos-feed', page],
     queryFn: () => api.get(`/kudos/feed?page=${page}&limit=20`).then((r) => r.data),
+    placeholderData: (prev) => prev,
   });
 
-  const posts: KudosPost[] = data?.data?.posts || [];
-  const total: number = data?.data?.total || 0;
+  useEffect(() => {
+    const incoming: KudosPost[] = data?.data?.posts ?? [];
+    const incomingTotal: number = data?.data?.total ?? 0;
+    if (!incoming.length && page === 1) return;
+    setAllPosts((prev) => (page === 1 ? incoming : [...prev, ...incoming]));
+    setTotal(incomingTotal);
+  }, [data, page]);
+
+  const handleKudosCreated = () => {
+    setPage(1);
+    queryClient.removeQueries({ queryKey: ['kudos-feed'] });
+  };
+
+  const showSkeleton = isLoading && page === 1;
+  const showLoadMore = total > allPosts.length && !isFetching;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -43,7 +60,7 @@ export default function FeedPage() {
 
           <FeedComposer onOpen={() => setIsDialogOpen(true)} />
 
-          {isLoading && (
+          {showSkeleton && (
             <div className="space-y-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 // eslint-disable-next-line react/no-array-index-key
@@ -52,7 +69,7 @@ export default function FeedPage() {
             </div>
           )}
 
-          {!isLoading && posts.length === 0 && (
+          {!showSkeleton && allPosts.length === 0 && (
             <EmptyState
               icon={MessageSquare}
               title="Nenhum reconhecimento ainda"
@@ -68,12 +85,20 @@ export default function FeedPage() {
             />
           )}
 
-          {!isLoading && posts.length > 0 && (
+          {allPosts.length > 0 && (
             <div className="space-y-4">
-              {posts.map((post) => (
+              {allPosts.map((post) => (
                 <KudosCard key={post.id} post={post} currentUserId={user?.id} />
               ))}
-              {total > page * 20 && (
+              {isFetching && page > 1 && (
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    // eslint-disable-next-line react/no-array-index-key
+                    <Skeleton key={`sk2-${i}`} className="h-48 w-full rounded-xl" />
+                  ))}
+                </div>
+              )}
+              {showLoadMore && (
                 <button
                   onClick={() => setPage((p) => p + 1)}
                   className="w-full py-3 text-sm text-muted-foreground hover:text-foreground border border-border hover:border-primary/30 rounded-xl transition-all"
@@ -94,7 +119,13 @@ export default function FeedPage() {
         </aside>
       </div>
 
-      <CreateKudosDialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} />
+      <CreateKudosDialog
+        open={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
+          handleKudosCreated();
+        }}
+      />
     </div>
   );
 }

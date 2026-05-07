@@ -7,11 +7,15 @@ const BIRTHDAYS = [
 
 export default function BirthdaysWidget() {
   return (
-    <div className="bg-card border border-border rounded-xl p-4">
-      <h3 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
-        <span>🎉</span>
-        Aniversariantes da semana
-      </h3>
+    <div className="bg-card border border-border rounded-xl p-4 opacity-60">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+          <span>🎉</span><span>Aniversariantes da semana</span>
+        </h3>
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border font-medium">
+          Preview
+        </span>
+      </div>
       <div className="space-y-2.5">
         {BIRTHDAYS.map((b) => (
           <div key={b.name} className="flex items-center gap-2.5">
@@ -29,6 +33,9 @@ export default function BirthdaysWidget() {
           </div>
         ))}
       </div>
+      <p className="text-[10px] text-muted-foreground text-center mt-3 pt-2.5 border-t border-border/50">
+        Dados reais após campo birthday ser implementado
+      </p>
     </div>
   );
 }

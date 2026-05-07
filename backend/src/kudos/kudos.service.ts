@@ -7,6 +7,7 @@ import {
 import { KudosPostStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { KudosRepository } from './kudos.repository';
+import { AchievementsService } from '../achievements/achievements.service';
 import { CreateKudosDto } from './dto/create-kudos.dto';
 import { KudosQueryDto } from './dto/kudos-query.dto';
 
@@ -15,6 +16,7 @@ export class KudosService {
   constructor(
     private readonly kudosRepository: KudosRepository,
     private readonly prisma: PrismaService,
+    private readonly achievementsService: AchievementsService,
   ) {}
 
   async getFeed(userId: string, query: KudosQueryDto) {
@@ -66,32 +68,29 @@ export class KudosService {
       this.kudosRepository.findCategoryById(dto.categoryId),
     ]);
 
-    if (!author?.isActive) {
-      throw new ForbiddenException('Sua conta está inativa');
-    }
+    if (!author?.isActive) throw new ForbiddenException('Sua conta está inativa');
+    if (!recipient) throw new NotFoundException('Colaborador não encontrado');
+    if (!recipient.isActive) throw new BadRequestException('Colaborador não está ativo');
+    if (!category) throw new NotFoundException('Categoria não encontrada');
+    if (!category.isActive) throw new BadRequestException('Categoria não está ativa');
 
-    if (!recipient) {
-      throw new NotFoundException('Colaborador não encontrado');
-    }
+    await this.enforcePointRule(authorId, dto.recipientId, dto.categoryId);
 
-    if (!recipient.isActive) {
-      throw new BadRequestException('Colaborador não está ativo');
-    }
-
-    if (!category) {
-      throw new NotFoundException('Categoria não encontrada');
-    }
-
-    if (!category.isActive) {
-      throw new BadRequestException('Categoria não está ativa');
-    }
-
-    return this.kudosRepository.create({
+    const post = await this.kudosRepository.create({
       message: dto.message,
       author: { connect: { id: authorId } },
       recipient: { connect: { id: dto.recipientId } },
       category: { connect: { id: dto.categoryId } },
     });
+
+    // ── Achievements (non-blocking) ────────────────────────────────────────────
+    Promise.all([
+      this.achievementsService.checkAndGrantAchievements(authorId),
+      this.achievementsService.checkAndGrantAchievements(dto.recipientId),
+    ]).catch(() => {});
+    // ──────────────────────────────────────────────────────────────────────────
+
+    return post;
   }
 
   async addLike(userId: string, postId: string) {
@@ -114,6 +113,51 @@ export class KudosService {
 
     await this.kudosRepository.deleteLike(userId, postId);
     return { liked: false };
+  }
+
+  // ─── PointRule helpers ──────────────────────────────────────────────────────
+
+  private async enforcePointRule(authorId: string, recipientId: string, categoryId: string) {
+    const rule = await this.prisma.pointRule.findUnique({ where: { categoryId } });
+    if (!rule) return;
+    await Promise.all([
+      this.enforceWeeklyLimit(authorId, categoryId, rule.weeklyLimit),
+      this.enforceCooldown(authorId, recipientId, categoryId, rule.cooldownHours),
+    ]);
+  }
+
+  private async enforceWeeklyLimit(authorId: string, categoryId: string, limit: number) {
+    if (limit <= 0) return;
+    const now = new Date();
+    const daysFromMonday = now.getDay() === 0 ? 6 : now.getDay() - 1;
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - daysFromMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const count = await this.prisma.kudosPost.count({
+      where: { authorId, categoryId, createdAt: { gte: startOfWeek }, status: { not: KudosPostStatus.REMOVED } },
+    });
+    if (count >= limit) {
+      throw new BadRequestException(`Limite semanal atingido para esta categoria (${limit} por semana)`);
+    }
+  }
+
+  private async enforceCooldown(
+    authorId: string,
+    recipientId: string,
+    categoryId: string,
+    cooldownHours: number,
+  ) {
+    if (cooldownHours <= 0) return;
+    const since = new Date(Date.now() - cooldownHours * 60 * 60 * 1000);
+    const recent = await this.prisma.kudosPost.findFirst({
+      where: { authorId, recipientId, categoryId, createdAt: { gte: since }, status: { not: KudosPostStatus.REMOVED } },
+    });
+    if (recent) {
+      throw new BadRequestException(
+        `Você já enviou um kudos nesta categoria para este colaborador. Aguarde ${cooldownHours}h antes de repetir.`,
+      );
+    }
   }
 
   findCategories() {

@@ -13,7 +13,6 @@ import CommunityDetailPage from '@/pages/CommunityDetailPage';
 import AdminLayout from '@/pages/admin/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminUsers from '@/pages/admin/AdminUsers';
-import AdminPosts from '@/pages/admin/AdminPosts';
 import AdminCategories from '@/pages/admin/AdminCategories';
 import AdminKudos from '@/pages/admin/AdminKudos';
 import AdminRules from '@/pages/admin/AdminRules';
@@ -65,7 +64,7 @@ export default function App() {
       >
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
-        <Route path="posts" element={<AdminPosts />} />
+        <Route path="posts" element={<Navigate to="/admin/kudos" replace />} />
         <Route path="categories" element={<AdminCategories />} />
         <Route path="kudos" element={<AdminKudos />} />
         <Route path="rules" element={<AdminRules />} />
