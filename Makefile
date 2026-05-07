@@ -1,4 +1,4 @@
-.PHONY: install dev backend frontend db-up db-down db-migrate seed lint build help
+.PHONY: install dev backend frontend db-up db-down db-migrate seed lint build docs docs-install docs-build help
 
 help: ## Mostra esta mensagem de ajuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -9,7 +9,12 @@ install: ## Instala dependências do backend e frontend
 	cd frontend && npm install
 	@echo "✅ Dependências instaladas!"
 
-dev: ## Sobe o banco e inicia backend + frontend em paralelo
+docs-install: ## Instala dependências da documentação
+	@echo "📦 Instalando dependências da documentação..."
+	cd docs && npm install
+	@echo "✅ Dependências da documentação instaladas!"
+
+dev: ## Sobe o banco e inicia backend + frontend + docs em paralelo
 	@echo "🚀 Iniciando Pulse em modo desenvolvimento..."
 	make db-up
 	@sleep 2
@@ -17,6 +22,7 @@ dev: ## Sobe o banco e inicia backend + frontend em paralelo
 	@trap 'kill 0' INT; \
 	cd backend && npm run start:dev & \
 	cd frontend && npm run dev & \
+	cd docs && npm start & \
 	wait
 
 backend: ## Inicia apenas o backend
@@ -68,12 +74,22 @@ docker-up: ## Sobe todos os serviços Docker
 docker-down: ## Para todos os serviços Docker
 	docker compose down
 
+docs: ## Inicia o servidor de documentação (Docusaurus) em localhost:3002
+	@echo "📚 Iniciando documentação em http://localhost:3002..."
+	cd docs && npm start
+
+docs-build: ## Gera o build estático da documentação
+	@echo "🏗️  Gerando build da documentação..."
+	cd docs && npm run build
+	@echo "✅ Build da documentação gerado em docs/build/"
+
 docker-logs: ## Mostra logs dos containers
 	docker compose logs -f
 
 setup: ## Setup inicial completo (instalar + banco + migrate + seed)
 	@echo "🎯 Setup inicial do Pulse..."
 	make install
+	make docs-install
 	make db-up
 	@sleep 3
 	make db-migrate
