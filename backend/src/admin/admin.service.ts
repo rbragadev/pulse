@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { KudosPostStatus, Role } from '@prisma/client';
+import { CommunityStatus, KudosPostStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CommunitiesRepository } from '../communities/communities.repository';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly communitiesRepo: CommunitiesRepository,
+  ) {}
 
   // ─── Dashboard ────────────────────────────────────────────────────────────
 
@@ -184,5 +188,65 @@ export class AdminService {
 
   getPosts(page = 1, limit = 20) {
     return this.getKudos(page, limit);
+  }
+
+  // ─── Communities ──────────────────────────────────────────────────────────
+
+  async getAdminCommunities(page = 1, limit = 20) {
+    const [communities, total] = await this.communitiesRepo.findAllAdmin(page, limit);
+    return { communities, total, page, limit };
+  }
+
+  createOfficialCommunity(data: {
+    name: string;
+    slug: string;
+    description?: string;
+    avatarUrl?: string;
+    bannerUrl?: string;
+    category?: string;
+    language?: string;
+    location?: string;
+    createdById: string;
+  }) {
+    return this.communitiesRepo.create({ ...data, isOfficial: true });
+  }
+
+  async updateCommunity(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      avatarUrl?: string;
+      bannerUrl?: string;
+      category?: string;
+      isOfficial?: boolean;
+      status?: CommunityStatus;
+    },
+  ) {
+    const community = await this.communitiesRepo.findById(id);
+    if (!community) throw new NotFoundException('Comunidade não encontrada');
+    return this.communitiesRepo.update(id, data);
+  }
+
+  getCommunityMembers(communityId: string) {
+    return this.communitiesRepo.findCommunityMembers(communityId);
+  }
+
+  getCommunityPosts(communityId: string, page = 1, limit = 20) {
+    return this.communitiesRepo.findCommunityPosts(communityId, page, limit);
+  }
+
+  moderateCommunityPost(postId: string, status: 'ACTIVE' | 'HIDDEN' | 'REMOVED') {
+    return this.communitiesRepo.updatePostStatus(postId, status as any);
+  }
+
+  async setCommunityMemberRole(
+    communityId: string,
+    userId: string,
+    role: 'MEMBER' | 'MODERATOR',
+  ) {
+    const membership = await this.communitiesRepo.findMembership(communityId, userId);
+    if (!membership) throw new NotFoundException('Membro não encontrado na comunidade');
+    return this.communitiesRepo.setMemberRole(communityId, userId, role);
   }
 }

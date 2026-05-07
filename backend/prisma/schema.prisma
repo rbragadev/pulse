@@ -40,6 +40,29 @@ enum VoteType {
   PROFESSIONAL
 }
 
+enum CommunityVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum CommunityStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum CommunityMemberRole {
+  MEMBER
+  MODERATOR
+  OWNER
+}
+
+enum CommunityPostStatus {
+  ACTIVE
+  HIDDEN
+  REMOVED
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -65,6 +88,12 @@ model User {
   votesReceived ProfileVote[]   @relation("VoteReceived")
   visitsMade    ProfileVisit[]  @relation("VisitsMade")
   visitsReceived ProfileVisit[] @relation("VisitsReceived")
+
+  communitiesCreated   Community[]             @relation("CommunityCreator")
+  communityMemberships CommunityMember[]
+  communityPosts       CommunityPost[]         @relation("CommunityPostAuthor")
+  communityComments    CommunityPostComment[]  @relation("CommunityCommentAuthor")
+  communityReactions   CommunityPostReaction[] @relation("CommunityReactionUser")
 
   @@map("users")
 }
@@ -282,4 +311,90 @@ model ProfileVisit {
   profile User @relation("VisitsReceived", fields: [profileId], references: [id], onDelete: Cascade)
 
   @@map("profile_visits")
+}
+
+// ─── Communities ───────────────────────────────────────────────────────────────
+
+model Community {
+  id          String              @id @default(uuid())
+  name        String
+  slug        String              @unique
+  description String?
+  avatarUrl   String?
+  bannerUrl   String?
+  category    String?
+  language    String              @default("Português (Brasil)")
+  location    String?
+  visibility  CommunityVisibility @default(PUBLIC)
+  isOfficial  Boolean             @default(false)
+  status      CommunityStatus     @default(ACTIVE)
+  createdById String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  createdBy User              @relation("CommunityCreator", fields: [createdById], references: [id])
+  members   CommunityMember[]
+  posts     CommunityPost[]
+
+  @@map("communities")
+}
+
+model CommunityMember {
+  id          String              @id @default(uuid())
+  communityId String
+  userId      String
+  role        CommunityMemberRole @default(MEMBER)
+  joinedAt    DateTime            @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@map("community_members")
+}
+
+model CommunityPost {
+  id          String              @id @default(uuid())
+  communityId String
+  authorId    String
+  title       String
+  content     String
+  status      CommunityPostStatus @default(ACTIVE)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  community Community              @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  author    User                   @relation("CommunityPostAuthor", fields: [authorId], references: [id])
+  comments  CommunityPostComment[]
+  reactions CommunityPostReaction[]
+
+  @@map("community_posts")
+}
+
+model CommunityPostComment {
+  id        String   @id @default(uuid())
+  postId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User          @relation("CommunityCommentAuthor", fields: [authorId], references: [id])
+
+  @@map("community_post_comments")
+}
+
+model CommunityPostReaction {
+  id           String       @id @default(uuid())
+  postId       String
+  userId       String
+  reactionType ReactionType
+  createdAt    DateTime     @default(now())
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User          @relation("CommunityReactionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, reactionType])
+  @@map("community_post_reactions")
 }

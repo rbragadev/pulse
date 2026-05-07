@@ -9,6 +9,7 @@ import ProfilePage from '@/pages/ProfilePage';
 import HallOfFamePage from '@/pages/HallOfFamePage';
 import BadgesPage from '@/pages/BadgesPage';
 import CommunitiesPage from '@/pages/CommunitiesPage';
+import CommunityDetailPage from '@/pages/CommunityDetailPage';
 import AdminLayout from '@/pages/admin/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminUsers from '@/pages/admin/AdminUsers';
@@ -17,6 +18,7 @@ import AdminCategories from '@/pages/admin/AdminCategories';
 import AdminKudos from '@/pages/admin/AdminKudos';
 import AdminRules from '@/pages/admin/AdminRules';
 import AdminAnalytics from '@/pages/admin/AdminAnalytics';
+import AdminCommunities from '@/pages/admin/AdminCommunities';
 
 function PrivateRoute({ children }: { readonly children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -51,6 +53,7 @@ export default function App() {
         <Route path="hall-of-fame" element={<HallOfFamePage />} />
         <Route path="badges" element={<BadgesPage />} />
         <Route path="communities" element={<CommunitiesPage />} />
+        <Route path="communities/:slug" element={<CommunityDetailPage />} />
       </Route>
       <Route
         path="/admin"
@@ -67,6 +70,7 @@ export default function App() {
         <Route path="kudos" element={<AdminKudos />} />
         <Route path="rules" element={<AdminRules />} />
         <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="communities" element={<AdminCommunities />} />
       </Route>
       <Route path="*" element={<Navigate to="/feed" replace />} />
     </Routes>

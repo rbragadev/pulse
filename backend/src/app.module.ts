@@ -13,6 +13,7 @@ import { BadgesModule } from './badges/badges.module';
 import { AchievementsModule } from './achievements/achievements.module';
 import { SeasonsModule } from './seasons/seasons.module';
 import { SocialProfileModule } from './social-profile/social-profile.module';
+import { CommunitiesModule } from './communities/communities.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { SocialProfileModule } from './social-profile/social-profile.module';
     AchievementsModule,
     SeasonsModule,
     SocialProfileModule,
+    CommunitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

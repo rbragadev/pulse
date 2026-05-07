@@ -1,4 +1,4 @@
-import { PrismaClient, Role, BadgeRarity, ReactionType, VoteType } from '@prisma/client';
+import { PrismaClient, Role, BadgeRarity, ReactionType, VoteType, CommunityMemberRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -471,6 +471,292 @@ async function main() {
 
   await prisma.profileVisit.createMany({ data: visitData, skipDuplicates: false });
   console.log(`✅ ${visitData.length} visitas de perfil criadas.`);
+
+  // ─── Communities ─────────────────────────────────────────────────────────
+  console.log('\n🏘️  Criando comunidades...');
+
+  const comm = (
+    slug: string, name: string, description: string, category: string,
+    avatarUrl: string, bannerUrl: string, location: string,
+    isOfficial: boolean, createdById: string,
+  ) => prisma.community.create({
+    data: { slug, name, description, category, avatarUrl, bannerUrl,
+      location, isOfficial, language: 'Português (Brasil)', createdById,
+      visibility: 'PUBLIC', status: 'ACTIVE',
+    },
+  });
+
+  const av2 = (seed: string, bg: string) =>
+    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${bg.replace('#', '')}`;
+
+  const [
+    cDevs, cCafe, cDeploy, cFrontend, cCultura, cGalacticos,
+    cMemes, cProduto, cVida, cTata, cBya, cSamuka,
+  ] = await Promise.all([
+    comm('devs-otg', 'Devs OTG', 'O cantinho dos devs que preferem debugar do que dormir. Aqui rola review de código, memes de programação e aquele suporte na madrugada quando o deploy foi embora.', 'Tecnologia', av2('Devs OTG', '#6366f1'), 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=60', 'OTG HQ', true, raphael.id),
+    comm('cafe-e-codigo', 'Café e Código', 'Só entra quem já tomou café antes da daily. Comunidade dos que acreditam que boas ideias nascem com a segunda xícara. Discussões técnicas e muito espresso.', 'Estilo de Vida', av2('Café', '#f59e0b'), 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=60', 'Brasil', false, lucas.id),
+    comm('deploy-sem-medo', 'Deploy sem Medo', 'Relatos de sexta às 17h59. Histórias de produção em chamas. Sobreviventes contam suas aventuras. Aqui ninguém te julga por ter deployado na sexta.', 'Tecnologia', av2('Deploy', '#ef4444'), 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=60', 'OTG HQ', false, carlos.id),
+    comm('frontend-lovers', 'Frontend Lovers', 'CSS não é difícil, é só arte abstrata. React, Vue, Angular? Aqui discutimos tudo com carinho e apenas um pouquinho de toxicidade sobre frameworks.', 'Tecnologia', av2('FE', '#8b5cf6'), 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=800&q=60', 'Brasil', false, mateus.id),
+    comm('cultura-otg', 'Cultura OTG', 'Os valores da OTG em formato de comunidade. Rituais, tradições, boas práticas e aquela vibe de quem faz acontecer. Comunidade oficial da nossa identidade.', 'Cultura', av2('Cultura', '#ec4899'), 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=60', 'OTG HQ', true, camila.id),
+    comm('galacticos-otg', 'Galácticos OTG', 'Hall dos que brilham mais. Reconhecimentos especiais, conquistas épicas e os melhores momentos de quem deu tudo pela OTG. Elenco dos sonhos.', 'Reconhecimento', av2('Galácticos', '#eab308'), 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800&q=60', 'OTG HQ', true, beatriz.id),
+    comm('memes-corporativos', 'Memes Corporativos', 'Reunião que poderia ser e-mail? Temos um meme pra isso. Deadline impossível? Meme. Daily de segunda? Definitivamente meme. Canal sagrado da saúde mental.', 'Diversão', av2('Memes', '#10b981'), 'https://images.unsplash.com/photo-1531259683007-016a7b628fc3?w=800&q=60', 'Brasil', false, gabriel.id),
+    comm('produto-e-discovery', 'Produto & Discovery', 'PMs, designers e devs curiosos. Aqui falamos de pesquisa com usuário, frameworks de priorização e aquele eterno debate: é bug ou é feature?', 'Produto', av2('Produto', '#3b82f6'), 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=60', 'OTG HQ', false, ana.id),
+    comm('vida-saudavel', 'Vida Saudável', 'Saúde mental não é luxo, é pré-requisito. Dicas de bem-estar, rotinas de movimento, receitas e aquele incentivo pra sair da cadeira de vez em quando.', 'Saúde', av2('Vida', '#22c55e'), 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=60', 'Brasil', false, isabela.id),
+    comm('eu-conheco-a-tata-do-rh', 'Eu Conheço a Tata do RH', 'Comunidade sagrada dos que já foram parar na sala da Tata e sobreviveram. Se você sabe, você sabe. Histórias épicas, confissões e muito respeito pela Tata.', 'Diversão', av2('Tata RH', '#f97316'), 'https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=800&q=60', 'OTG HQ', false, pedro.id),
+    comm('bya-vestida-de-homem-aranha', 'Bya Vestida de Homem-Aranha', 'Aquele dia inesquecível em que a Beatriz apareceu na festa fantasiada de Homem-Aranha. A comunidade que preserva essa memória histórica pra sempre.', 'Diversão', av2('Bya Spider', '#dc2626'), 'https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=800&q=60', 'OTG HQ', false, fernanda.id),
+    comm('dj-samuka', 'DJ Samuka', 'O Samuel do financeiro que também é DJ nos finais de semana. Playlist recommendations, análises financeiras com trilha sonora e o crossover que ninguém pediu mas todos amam.', 'Música', av2('DJ Samuka', '#7c3aed'), 'https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=800&q=60', 'Brasil', false, rodrigo.id),
+  ]);
+  console.log('✅ 12 comunidades criadas.');
+
+  // ─── Community Members ────────────────────────────────────────────────────
+  const addMember = (communityId: string, userId: string, role: CommunityMemberRole = CommunityMemberRole.MEMBER) =>
+    prisma.communityMember.upsert({
+      where: { communityId_userId: { communityId, userId } },
+      update: { role },
+      create: { communityId, userId, role },
+    });
+
+  await Promise.all([
+    // Devs OTG - oficial, owner=raphael
+    addMember(cDevs.id, raphael.id, CommunityMemberRole.OWNER),
+    addMember(cDevs.id, lucas.id, CommunityMemberRole.MODERATOR),
+    addMember(cDevs.id, carlos.id, CommunityMemberRole.MODERATOR),
+    addMember(cDevs.id, mateus.id), addMember(cDevs.id, gabriel.id),
+    addMember(cDevs.id, gustavo.id), addMember(cDevs.id, ana.id),
+    addMember(cDevs.id, mariana.id), addMember(cDevs.id, larissa.id),
+
+    // Café e Código - owner=lucas
+    addMember(cCafe.id, lucas.id, CommunityMemberRole.OWNER),
+    addMember(cCafe.id, mateus.id, CommunityMemberRole.MODERATOR),
+    addMember(cCafe.id, carlos.id), addMember(cCafe.id, gabriel.id),
+    addMember(cCafe.id, gustavo.id), addMember(cCafe.id, raphael.id),
+    addMember(cCafe.id, ana.id), addMember(cCafe.id, fernanda.id),
+    addMember(cCafe.id, pedro.id), addMember(cCafe.id, rodrigo.id),
+    addMember(cCafe.id, amanda.id), addMember(cCafe.id, thiago.id),
+    addMember(cCafe.id, mariana.id), addMember(cCafe.id, larissa.id),
+    addMember(cCafe.id, isabela.id),
+
+    // Deploy sem Medo - owner=carlos
+    addMember(cDeploy.id, carlos.id, CommunityMemberRole.OWNER),
+    addMember(cDeploy.id, lucas.id, CommunityMemberRole.MODERATOR),
+    addMember(cDeploy.id, mateus.id), addMember(cDeploy.id, gabriel.id),
+    addMember(cDeploy.id, gustavo.id), addMember(cDeploy.id, raphael.id),
+    addMember(cDeploy.id, thiago.id), addMember(cDeploy.id, rodrigo.id),
+
+    // Frontend Lovers - owner=mateus
+    addMember(cFrontend.id, mateus.id, CommunityMemberRole.OWNER),
+    addMember(cFrontend.id, gustavo.id, CommunityMemberRole.MODERATOR),
+    addMember(cFrontend.id, lucas.id), addMember(cFrontend.id, carlos.id),
+    addMember(cFrontend.id, gabriel.id), addMember(cFrontend.id, mariana.id),
+    addMember(cFrontend.id, larissa.id), addMember(cFrontend.id, ana.id),
+
+    // Cultura OTG - oficial, owner=camila
+    addMember(cCultura.id, camila.id, CommunityMemberRole.OWNER),
+    addMember(cCultura.id, beatriz.id, CommunityMemberRole.MODERATOR),
+    addMember(cCultura.id, isabela.id, CommunityMemberRole.MODERATOR),
+    addMember(cCultura.id, raphael.id), addMember(cCultura.id, ana.id),
+    addMember(cCultura.id, fernanda.id), addMember(cCultura.id, juliana.id),
+    addMember(cCultura.id, pedro.id), addMember(cCultura.id, amanda.id),
+    addMember(cCultura.id, thiago.id), addMember(cCultura.id, lucas.id),
+    addMember(cCultura.id, carlos.id), addMember(cCultura.id, mariana.id),
+    addMember(cCultura.id, larissa.id), addMember(cCultura.id, rodrigo.id),
+
+    // Galácticos - oficial, owner=beatriz
+    addMember(cGalacticos.id, beatriz.id, CommunityMemberRole.OWNER),
+    addMember(cGalacticos.id, camila.id, CommunityMemberRole.MODERATOR),
+    addMember(cGalacticos.id, raphael.id), addMember(cGalacticos.id, ana.id),
+    addMember(cGalacticos.id, gabriel.id), addMember(cGalacticos.id, lucas.id),
+    addMember(cGalacticos.id, carlos.id), addMember(cGalacticos.id, amanda.id),
+
+    // Memes - owner=gabriel
+    addMember(cMemes.id, gabriel.id, CommunityMemberRole.OWNER),
+    addMember(cMemes.id, mateus.id, CommunityMemberRole.MODERATOR),
+    addMember(cMemes.id, lucas.id), addMember(cMemes.id, carlos.id),
+    addMember(cMemes.id, ana.id), addMember(cMemes.id, fernanda.id),
+    addMember(cMemes.id, thiago.id), addMember(cMemes.id, gustavo.id),
+    addMember(cMemes.id, raphael.id), addMember(cMemes.id, mariana.id),
+    addMember(cMemes.id, larissa.id), addMember(cMemes.id, rodrigo.id),
+    addMember(cMemes.id, amanda.id), addMember(cMemes.id, juliana.id),
+
+    // Produto - owner=ana
+    addMember(cProduto.id, ana.id, CommunityMemberRole.OWNER),
+    addMember(cProduto.id, larissa.id, CommunityMemberRole.MODERATOR),
+    addMember(cProduto.id, mariana.id, CommunityMemberRole.MODERATOR),
+    addMember(cProduto.id, raphael.id), addMember(cProduto.id, lucas.id),
+    addMember(cProduto.id, carlos.id), addMember(cProduto.id, gustavo.id),
+
+    // Vida Saudável - owner=isabela
+    addMember(cVida.id, isabela.id, CommunityMemberRole.OWNER),
+    addMember(cVida.id, camila.id, CommunityMemberRole.MODERATOR),
+    addMember(cVida.id, beatriz.id), addMember(cVida.id, fernanda.id),
+    addMember(cVida.id, juliana.id), addMember(cVida.id, ana.id),
+    addMember(cVida.id, larissa.id), addMember(cVida.id, mariana.id),
+    addMember(cVida.id, amanda.id),
+
+    // Eu Conheço a Tata - owner=pedro
+    addMember(cTata.id, pedro.id, CommunityMemberRole.OWNER),
+    addMember(cTata.id, thiago.id, CommunityMemberRole.MODERATOR),
+    addMember(cTata.id, amanda.id), addMember(cTata.id, rodrigo.id),
+    addMember(cTata.id, patricia.id), addMember(cTata.id, fernanda.id),
+    addMember(cTata.id, juliana.id), addMember(cTata.id, felipe.id),
+    addMember(cTata.id, isabela.id), addMember(cTata.id, lucas.id),
+    addMember(cTata.id, mateus.id), addMember(cTata.id, gustavo.id),
+
+    // Bya Homem-Aranha - owner=fernanda
+    addMember(cBya.id, fernanda.id, CommunityMemberRole.OWNER),
+    addMember(cBya.id, juliana.id, CommunityMemberRole.MODERATOR),
+    addMember(cBya.id, felipe.id), addMember(cBya.id, pedro.id),
+    addMember(cBya.id, thiago.id), addMember(cBya.id, amanda.id),
+    addMember(cBya.id, camila.id), addMember(cBya.id, isabela.id),
+    addMember(cBya.id, ana.id), addMember(cBya.id, lucas.id),
+    addMember(cBya.id, carlos.id), addMember(cBya.id, raphael.id),
+    addMember(cBya.id, mariana.id), addMember(cBya.id, larissa.id),
+
+    // DJ Samuka - owner=rodrigo
+    addMember(cSamuka.id, rodrigo.id, CommunityMemberRole.OWNER),
+    addMember(cSamuka.id, patricia.id, CommunityMemberRole.MODERATOR),
+    addMember(cSamuka.id, mateus.id), addMember(cSamuka.id, gabriel.id),
+    addMember(cSamuka.id, gustavo.id), addMember(cSamuka.id, felipe.id),
+    addMember(cSamuka.id, juliana.id), addMember(cSamuka.id, fernanda.id),
+  ]);
+  console.log('✅ Membros distribuídos nas comunidades.');
+
+  // ─── Community Posts ──────────────────────────────────────────────────────
+  const mkPost = (communityId: string, authorId: string, title: string, content: string, daysBack: number) =>
+    prisma.communityPost.create({
+      data: { communityId, authorId, title, content, status: 'ACTIVE', createdAt: daysAgo(daysBack) },
+    });
+
+  const [
+    p1, p2, p3, p4, p5, p6, p7, p8, p9, p10,
+    p11, p12, p13, p14, p15, p16, p17, p18, p19, p20,
+    p21, p22, p23, p24, p25,
+  ] = await Promise.all([
+    // Devs OTG
+    mkPost(cDevs.id, raphael.id, '🚀 Code review: boas práticas que adotamos em 2026', 'Gente, juntei as melhores práticas de code review que o time Devs OTG consolidou esse ano. PR pequeno com descrição clara, teste na branch antes de pedir review, e sempre agradecer quem revisou. O que vocês acham? Tem algo que faltou?', 2),
+    mkPost(cDevs.id, lucas.id, '🐛 Bug mais bizarro da história: await dentro de forEach', 'Perdi 3 horas num bug que parecia impossível. O forEach não é async! Chamava uma função async dentro do forEach e a promise simplesmente era ignorada. Solução: Promise.all com map. Compartilhem os bugs mais absurdos que já encontraram!', 5),
+    mkPost(cDevs.id, carlos.id, 'Arquitetura de microsserviços: quando vale a pena?', 'Depois de migrar dois projetos pra microsserviços e me arrepender de um deles, quero compartilhar minha visão. Se seu time tem menos de 5 devs ou o sistema é novo: MONOLITO. Microsserviços é problema de escala, não de elegância. Debate aberto!', 10),
+
+    // Café e Código
+    mkPost(cCafe.id, lucas.id, '☕ Só entra quem já tomou café antes da daily', 'Regra número 1 desta comunidade. Não existe participação de qualidade em uma daily sem pelo menos uma xícara. Dois, três para tópicos difíceis. Compartilha aí: qual o seu ritual de café pré-trabalho?', 1),
+    mkPost(cCafe.id, mateus.id, 'Melhores cafeterias para trabalhar em SP', 'Testei umas 20 cafeterias ao longo dos últimos meses e criei um ranking pessoal. Critérios: wifi, tomadas, nível de barulho e obviamente o café. Qual a sua favorita?', 8),
+    mkPost(cCafe.id, carlos.id, '🧠 O melhor código que escrevi foi depois do terceiro espresso', 'Sério, tinha uma complexidade de O(n²) que eu não conseguia enxergar a solução. Aí fui tomar um café, voltei e em 15 minutos refatorei pra O(n log n). Cafeína é suplemento cognitivo não reconhecido pela ciência.', 14),
+
+    // Deploy sem Medo
+    mkPost(cDeploy.id, carlos.id, '🚨 Relato: deploy em sexta às 17h58', 'Vou confessar algo. Fiz um hotfix de emergência na sexta antes de um feriado. Deploy às 17h58. Monitorei o fim de semana todo do celular. Deu certo, mas nunca mais. Quem tem histórias similares?', 3),
+    mkPost(cDeploy.id, gabriel.id, 'Como sobrevivemos ao maior incidente da história da OTG', 'O banco de dados de produção ficou fora por 4 horas. Documentei tudo: o que deu errado, como descobrimos, como resolvemos, o que mudamos depois. Leitura obrigatória pra qualquer dev.', 12),
+    mkPost(cDeploy.id, gustavo.id, 'Feature flags salvam vidas: como implementamos aqui', 'Depois do incidente do trimestre passado, adotamos feature flags em tudo. Nenhum deploy vai pra 100% dos usuários sem passar por canary release. Aqui está como configuramos.', 20),
+
+    // Frontend Lovers
+    mkPost(cFrontend.id, mateus.id, '💅 CSS Grid vs Flexbox: pare de brigar, use os dois', 'A galera ainda trata como either/or mas são ferramentas diferentes. Grid pra layout bidimensional, Flex pra linear. Neste post mostro casos reais de quando usar cada um.', 4),
+    mkPost(cFrontend.id, gustavo.id, 'React 19 na prática: o que mudou no nosso projeto', 'Migramos dois módulos pra React 19 essa sprint. As novidades de Actions e Server Components estão maduras. Aqui está o que fizemos, o que foi tranquilo e o que foi doloroso.', 9),
+    mkPost(cFrontend.id, lucas.id, 'Acessibilidade não é feature, é requisito básico', 'Fiz um audit de acessibilidade no nosso app e o resultado foi... constrangedor. Compartilhando o que corrigimos e o checklist que criei pra não mais esquecer.', 16),
+
+    // Cultura OTG
+    mkPost(cCultura.id, camila.id, '💛 Valores OTG: um por um, o que significa na prática', 'Cada valor da empresa tem uma história real por trás. Resolvi documentar exemplos concretos de cada um que vivi aqui. Porque valor não é pôster na parede, é ação.', 3),
+    mkPost(cCultura.id, isabela.id, 'O ritual do café com o CEO: experiência de quem participou', 'Fui numa das sessões de café com o CEO semana passada e foi revelador. Sem agenda, sem slides, só conversa. Compartilho os aprendizados e insights que tirei da sessão.', 11),
+    mkPost(cCultura.id, beatriz.id, '🎉 Como celebramos conquistas aqui na OTG', 'Celebrar é parte da cultura. Mas como fazemos isso de forma autêntica e não forçada? Documentando nossos rituais de celebração que nasceram organicamente do time.', 18),
+
+    // Memes
+    mkPost(cMemes.id, gabriel.id, '😂 Quando o cliente muda os requisitos no dia da entrega', 'Essa semana aconteceu de novo. Tenho uma coleção de memes que descreve perfeitamente essa situação universal. Adicionem os seus nos comentários!', 2),
+    mkPost(cMemes.id, lucas.id, 'Thread de memes: reunião que poderia ser e-mail', 'Compilei os melhores memes sobre a reunião desnecessária. É humor, mas também é catarse coletiva. Manda o seu favorito!', 6),
+
+    // Produto
+    mkPost(cProduto.id, ana.id, '🔍 Como fizemos discovery com 30 usuários em 2 semanas', 'Compartilhando o método que usamos na última sprint de discovery. Jobs To Be Done + entrevistas qualitativas + análise de comportamento. O roteiro completo está aqui.', 5),
+    mkPost(cProduto.id, larissa.id, 'Framework de priorização que realmente funciona', 'Testei ICE, RICE, e criamos um híbrido. O critério mais importante que adicionamos: impacto no cliente imediato. Explico tudo com exemplos reais do nosso backlog.', 13),
+
+    // Vida Saudável
+    mkPost(cVida.id, isabela.id, '🌱 30 dias sem doom scrolling: relato honesto', 'Fiz a experiência. As primeiras duas semanas foram difíceis. Depois de 30 dias: dormi melhor, produzi mais e fui mais presente nas conversas. Compartilho o passo a passo.', 7),
+    mkPost(cVida.id, camila.id, 'Pausa de 5 minutos a cada hora: como implementei no trabalho', 'Técnica Pomodoro adaptada. Além de produtividade, observei melhora na postura e menos dor de cabeça. Comparto a rotina exata que criei.', 15),
+
+    // Eu Conheço a Tata
+    mkPost(cTata.id, pedro.id, '👩‍💼 A primeira vez que fui chamado na sala da Tata', 'Tinha 3 meses de empresa. Recebi aquele "pode vir aqui um segundo?" no Teams. Entrei pensando que ia embora. Saí com um aumento. O que aprendi sobre não assumir o pior.', 4),
+    mkPost(cTata.id, thiago.id, 'Quem já foi convocado pra conversa de feedback às 15h numa sexta?', 'Esse era o medo número 1 de todo mundo. Compartilhem suas histórias de sexta às 15h com RH. As minhas acabaram sempre bem, mas o coração dispara igual.', 10),
+
+    // Bya Homem-Aranha
+    mkPost(cBya.id, fernanda.id, '🕷️ O dia que a Bya virou lenda da OTG', 'Conta a lenda que era a festa de Halloween da empresa. Beatriz apareceu com o traje completo do Homem-Aranha e passou o dia inteiro de terno-aranha nas reuniões. Esse dia mudou a cultura da OTG.', 1),
+
+    // DJ Samuka
+    mkPost(cSamuka.id, rodrigo.id, '🎧 Playlist para fechar o mês: bpm que combina com deadline', 'Quando é véspera de fechamento, não dá pra ouvir música lenta. Aqui está minha playlist de alta energia pro sprint final. BPM calibrado pra produtividade máxima.', 3),
+  ]);
+  console.log('✅ Posts das comunidades criados.');
+
+  // ─── Community Comments ───────────────────────────────────────────────────
+  await Promise.all([
+    prisma.communityPostComment.create({ data: { postId: p1.id, authorId: lucas.id, content: 'Concordo 100%! Adicionaria: nunca faça review depois das 18h, o cérebro já foi 😅' } }),
+    prisma.communityPostComment.create({ data: { postId: p1.id, authorId: carlos.id, content: 'PR pequeno é lei. Qualquer coisa acima de 400 linhas eu já mando de volta pro autor.' } }),
+    prisma.communityPostComment.create({ data: { postId: p1.id, authorId: gabriel.id, content: 'Perfeito. Tem que adicionar na description o "por que" da mudança, não só o "o que".' } }),
+    prisma.communityPostComment.create({ data: { postId: p2.id, authorId: mateus.id, content: 'Clássico! Já passei exatamente por isso. Agora tenho um lint que proíbe async inside forEach hahaha' } }),
+    prisma.communityPostComment.create({ data: { postId: p2.id, authorId: carlos.id, content: 'O mais bizarro que vi foi uma promise sendo swallowed dentro de um try-catch errado. 2 dias de debug.' } }),
+    prisma.communityPostComment.create({ data: { postId: p3.id, authorId: lucas.id, content: 'Essa filosofia de monolito primeiro me salvou semanas de trabalho desnecessário no projeto anterior.' } }),
+    prisma.communityPostComment.create({ data: { postId: p4.id, authorId: carlos.id, content: 'Regra sagrada. Quem chega na daily sem café não tem direito a voto.' } }),
+    prisma.communityPostComment.create({ data: { postId: p4.id, authorId: mateus.id, content: 'Posso adicionar: duas xícaras para sprint planning, três para retrospectiva difícil.' } }),
+    prisma.communityPostComment.create({ data: { postId: p4.id, authorId: gabriel.id, content: 'A daily de segunda exige um nível extra de cafeína que a ciência ainda não documentou.' } }),
+    prisma.communityPostComment.create({ data: { postId: p7.id, authorId: lucas.id, content: 'Herói ou vilão? As duas coisas. Mas principalmente herói por tudo ter dado certo.' } }),
+    prisma.communityPostComment.create({ data: { postId: p7.id, authorId: mateus.id, content: 'Eu nunca faço deploy em sexta. Mas respeito demais quem tem coragem.' } }),
+    prisma.communityPostComment.create({ data: { postId: p7.id, authorId: gabriel.id, content: 'Próxima vez: feature flag. Você salva a si mesmo de uma final boss sexta.' } }),
+    prisma.communityPostComment.create({ data: { postId: p8.id, authorId: carlos.id, content: 'Esse post deveria ser treinamento obrigatório pra todo dev novo. Documentação impecável.' } }),
+    prisma.communityPostComment.create({ data: { postId: p8.id, authorId: mateus.id, content: 'O runbook que criamos depois disso é o melhor artefato técnico que temos hoje.' } }),
+    prisma.communityPostComment.create({ data: { postId: p10.id, authorId: gustavo.id, content: 'Finalmente alguém diz isso! Cansei de ver projeto começar com flexbox onde claramente era pra usar grid.' } }),
+    prisma.communityPostComment.create({ data: { postId: p13.id, authorId: beatriz.id, content: 'Esse post vai pra wiki de onboarding imediatamente. Obrigada Camila!' } }),
+    prisma.communityPostComment.create({ data: { postId: p13.id, authorId: isabela.id, content: 'Vivo esses valores todo dia. Ler assim de forma estruturada deu um novo significado.' } }),
+    prisma.communityPostComment.create({ data: { postId: p16.id, authorId: mateus.id, content: 'Esse meme vai pro grupo de família 😂' } }),
+    prisma.communityPostComment.create({ data: { postId: p16.id, authorId: carlos.id, content: '"só uma coisinha pequena" é a frase mais perigosa do universo do desenvolvimento.' } }),
+    prisma.communityPostComment.create({ data: { postId: p18.id, authorId: mariana.id, content: 'O framework de entrevistas que você compartilhou mudou completamente como fazemos discovery aqui.' } }),
+    prisma.communityPostComment.create({ data: { postId: p18.id, authorId: larissa.id, content: 'Jobs to be Done é o melhor framework que já usei. Obrigada por documentar assim!' } }),
+    prisma.communityPostComment.create({ data: { postId: p22.id, authorId: thiago.id, content: 'Saí suando frio de uma dessas uma vez. Mas era só pro café com o CEO hahaha' } }),
+    prisma.communityPostComment.create({ data: { postId: p22.id, authorId: amanda.id, content: 'A Tata tem uma energia muito especial. Nunca fui pra uma reunião dela e saí mal.' } }),
+    prisma.communityPostComment.create({ data: { postId: p24.id, authorId: camila.id, content: 'Esse dia foi histórico. A Bya literalmente fez apresentação pra diretoria com a máscara do Homem-Aranha.' } }),
+    prisma.communityPostComment.create({ data: { postId: p24.id, authorId: ana.id, content: 'Eu estava lá. Nunca esquecerei. Aquilo quebrou o protocolo corporativo de um jeito maravilhoso.' } }),
+    prisma.communityPostComment.create({ data: { postId: p24.id, authorId: lucas.id, content: 'A Bya subiu de cargo na semana seguinte. Correlação ou causalidade?' } }),
+    prisma.communityPostComment.create({ data: { postId: p25.id, authorId: gabriel.id, content: 'DJ Samuka com playlist de fechamento é suplemento de produtividade certificado.' } }),
+    prisma.communityPostComment.create({ data: { postId: p25.id, authorId: mateus.id, content: 'Coloca no Spotify por favor. Preciso disso toda sexta de deadline.' } }),
+  ]);
+  console.log('✅ Comentários das comunidades criados.');
+
+  // ─── Community Reactions ──────────────────────────────────────────────────
+  const communityReactions: Array<{ postId: string; userId: string; reactionType: ReactionType }> = [
+    { postId: p1.id, userId: mateus.id, reactionType: 'CLAP' },
+    { postId: p1.id, userId: gabriel.id, reactionType: 'FIRE' },
+    { postId: p1.id, userId: ana.id, reactionType: 'CLAP' },
+    { postId: p2.id, userId: carlos.id, reactionType: 'BRAIN' },
+    { postId: p2.id, userId: mateus.id, reactionType: 'BRAIN' },
+    { postId: p2.id, userId: gustavo.id, reactionType: 'HEART' },
+    { postId: p3.id, userId: lucas.id, reactionType: 'FIRE' },
+    { postId: p3.id, userId: mateus.id, reactionType: 'CLAP' },
+    { postId: p4.id, userId: carlos.id, reactionType: 'HEART' },
+    { postId: p4.id, userId: mateus.id, reactionType: 'CLAP' },
+    { postId: p4.id, userId: gabriel.id, reactionType: 'HEART' },
+    { postId: p4.id, userId: raphael.id, reactionType: 'CLAP' },
+    { postId: p7.id, userId: mateus.id, reactionType: 'ROCKET' },
+    { postId: p7.id, userId: gabriel.id, reactionType: 'FIRE' },
+    { postId: p7.id, userId: gustavo.id, reactionType: 'HEART' },
+    { postId: p8.id, userId: carlos.id, reactionType: 'CLAP' },
+    { postId: p8.id, userId: lucas.id, reactionType: 'BRAIN' },
+    { postId: p8.id, userId: raphael.id, reactionType: 'ROCKET' },
+    { postId: p13.id, userId: beatriz.id, reactionType: 'HEART' },
+    { postId: p13.id, userId: isabela.id, reactionType: 'HEART' },
+    { postId: p13.id, userId: ana.id, reactionType: 'CLAP' },
+    { postId: p13.id, userId: fernanda.id, reactionType: 'HEART' },
+    { postId: p16.id, userId: mateus.id, reactionType: 'FIRE' },
+    { postId: p16.id, userId: carlos.id, reactionType: 'BRAIN' },
+    { postId: p16.id, userId: ana.id, reactionType: 'CLAP' },
+    { postId: p18.id, userId: larissa.id, reactionType: 'ROCKET' },
+    { postId: p18.id, userId: mariana.id, reactionType: 'BRAIN' },
+    { postId: p18.id, userId: carlos.id, reactionType: 'CLAP' },
+    { postId: p22.id, userId: thiago.id, reactionType: 'HEART' },
+    { postId: p22.id, userId: amanda.id, reactionType: 'CLAP' },
+    { postId: p24.id, userId: camila.id, reactionType: 'FIRE' },
+    { postId: p24.id, userId: ana.id, reactionType: 'HEART' },
+    { postId: p24.id, userId: lucas.id, reactionType: 'ROCKET' },
+    { postId: p24.id, userId: carlos.id, reactionType: 'CLAP' },
+    { postId: p24.id, userId: raphael.id, reactionType: 'HEART' },
+    { postId: p25.id, userId: gabriel.id, reactionType: 'ROCKET' },
+    { postId: p25.id, userId: mateus.id, reactionType: 'FIRE' },
+  ];
+
+  await prisma.communityPostReaction.createMany({ data: communityReactions, skipDuplicates: true });
+  console.log(`✅ ${communityReactions.length} reações nas comunidades criadas.`);
 
   console.log('\n🎉 Seed Fase 3 completo! Gamificação ativa.');
   console.log(`   Admin: raphaelbraga@grupootg.com`);

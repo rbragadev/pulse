@@ -6,7 +6,7 @@ import api from '@/lib/api';
 import UserAvatar from '@/components/shared/UserAvatar';
 import KudosCard from '@/components/shared/KudosCard';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
-import { KudosPost, SocialProfile, VoteType, BadgeRarity } from '@/types';
+import { KudosPost, SocialProfile, VoteType, BadgeRarity, MyCommunities, Community } from '@/types';
 import {
   Award, Star, Users, MessageSquare, TrendingUp,
   Eye, Heart, Zap, Trophy, Shield, Smile, ChevronDown, ChevronUp,
@@ -60,6 +60,18 @@ export default function ProfilePage() {
       api.post(`/social-profile/${userId}/vote`, { type }).then((r) => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['social-profile', userId] }),
   });
+
+  const { data: myCommunitiesData } = useQuery({
+    queryKey: ['communities-my'],
+    queryFn: () => api.get('/communities/my').then((r) => r.data?.data ?? r.data),
+    enabled: isOwnProfile,
+  });
+
+  const myCommunities: MyCommunities | null = myCommunitiesData ?? null;
+  const communityList: Community[] = [
+    ...(myCommunities?.communitiesICreated ?? []),
+    ...(myCommunities?.communitiesIMember ?? []),
+  ].slice(0, 6);
 
   if (!userId || isLoading) return <LoadingSpinner />;
   if (!profileData?.user) return <div className="text-center py-20 text-muted-foreground">Usuário não encontrado.</div>;
@@ -217,6 +229,41 @@ export default function ProfilePage() {
                   </Link>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Comunidades */}
+          {isOwnProfile && communityList.length > 0 && (
+            <div className="bg-card border border-border rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                Comunidades
+              </h3>
+              <div className="space-y-2">
+                {communityList.map((c) => (
+                  <Link
+                    key={c.id}
+                    to={`/communities/${c.slug}`}
+                    className="flex items-center gap-2 hover:bg-secondary/50 rounded-lg p-1.5 transition-colors"
+                  >
+                    <div className="w-7 h-7 rounded-lg overflow-hidden bg-primary/10 shrink-0 flex items-center justify-center">
+                      {c.avatarUrl ? (
+                        <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xs font-bold text-primary">{c.name[0]}</span>
+                      )}
+                    </div>
+                    <p className="text-xs font-medium text-foreground flex-1 truncate">{c.name}</p>
+                    <span className="text-[10px] text-muted-foreground">{c._count?.members ?? 0}</span>
+                  </Link>
+                ))}
+              </div>
+              <Link
+                to="/communities"
+                className="block text-center text-xs text-primary hover:underline mt-3 pt-2.5 border-t border-border/50"
+              >
+                Ver todas →
+              </Link>
             </div>
           )}
 

@@ -9,7 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { KudosPostStatus, Role } from '@prisma/client';
+import { CommunityStatus, KudosPostStatus, Role } from '@prisma/client';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -128,5 +129,81 @@ export class AdminController {
     @Body() dto: { points?: number; weeklyLimit?: number; cooldownHours?: number },
   ) {
     return this.adminService.updateRule(id, dto);
+  }
+
+  // ─── Communities ──────────────────────────────────────────────────────────
+
+  @Get('communities')
+  getAdminCommunities(
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
+    return this.adminService.getAdminCommunities(+page, +limit);
+  }
+
+  @Post('communities')
+  createOfficialCommunity(
+    @CurrentUser() user: any,
+    @Body()
+    dto: {
+      name: string;
+      slug: string;
+      description?: string;
+      avatarUrl?: string;
+      bannerUrl?: string;
+      category?: string;
+      language?: string;
+      location?: string;
+    },
+  ) {
+    return this.adminService.createOfficialCommunity({ ...dto, createdById: user.id });
+  }
+
+  @Patch('communities/:id')
+  updateCommunity(
+    @Param('id') id: string,
+    @Body()
+    dto: {
+      name?: string;
+      description?: string;
+      avatarUrl?: string;
+      bannerUrl?: string;
+      category?: string;
+      isOfficial?: boolean;
+      status?: CommunityStatus;
+    },
+  ) {
+    return this.adminService.updateCommunity(id, dto);
+  }
+
+  @Get('communities/:id/members')
+  getCommunityMembers(@Param('id') id: string) {
+    return this.adminService.getCommunityMembers(id);
+  }
+
+  @Patch('communities/:id/members/:userId/role')
+  setCommunityMemberRole(
+    @Param('id') communityId: string,
+    @Param('userId') userId: string,
+    @Body('role') role: 'MEMBER' | 'MODERATOR',
+  ) {
+    return this.adminService.setCommunityMemberRole(communityId, userId, role);
+  }
+
+  @Get('communities/:id/posts')
+  getCommunityPosts(
+    @Param('id') id: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
+    return this.adminService.getCommunityPosts(id, +page, +limit);
+  }
+
+  @Patch('communities/posts/:postId/status')
+  moderateCommunityPost(
+    @Param('postId') postId: string,
+    @Body('status') status: 'ACTIVE' | 'HIDDEN' | 'REMOVED',
+  ) {
+    return this.adminService.moderateCommunityPost(postId, status);
   }
 }

@@ -182,6 +182,81 @@ export interface RankingItem {
   user: User;
 }
 
+// ─── Communities ────────────────────────────────────────────────────────────
+
+export type CommunityVisibility = 'PUBLIC' | 'PRIVATE';
+export type CommunityStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+export type CommunityMemberRole = 'MEMBER' | 'MODERATOR' | 'OWNER';
+export type CommunityPostStatus = 'ACTIVE' | 'HIDDEN' | 'REMOVED';
+
+export interface Community {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  avatarUrl?: string;
+  bannerUrl?: string;
+  category?: string;
+  language: string;
+  location?: string;
+  visibility: CommunityVisibility;
+  isOfficial: boolean;
+  status: CommunityStatus;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: Pick<User, 'id' | 'name' | 'avatar'>;
+  _count?: { members: number; posts: number };
+  isMember?: boolean;
+}
+
+export interface CommunityDetail extends Community {
+  isMember: boolean;
+  userRole: CommunityMemberRole | null;
+  owner: Pick<User, 'id' | 'name' | 'avatar'> & { department?: Department | null };
+  moderators: Array<Pick<User, 'id' | 'name' | 'avatar'>>;
+  recentMembers: Array<Pick<User, 'id' | 'name' | 'avatar'>>;
+  recentPosts: CommunityPost[];
+}
+
+export interface CommunityMember {
+  id: string;
+  communityId: string;
+  userId: string;
+  role: CommunityMemberRole;
+  joinedAt: string;
+  user?: Pick<User, 'id' | 'name' | 'avatar'> & { department?: Department | null };
+}
+
+export interface CommunityPost {
+  id: string;
+  communityId: string;
+  authorId: string;
+  title: string;
+  content: string;
+  status: CommunityPostStatus;
+  createdAt: string;
+  updatedAt: string;
+  author: Pick<User, 'id' | 'name' | 'avatar'> & { department?: Department | null };
+  _count?: { comments: number; reactions: number };
+  myReactions?: string[];
+}
+
+export interface CommunityPostComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+  author: Pick<User, 'id' | 'name' | 'avatar'> & { department?: Department | null };
+}
+
+export interface MyCommunities {
+  communitiesIMember: Community[];
+  communitiesICreated: Community[];
+  communitiesIModerate: Community[];
+}
+
 export interface AdminStats {
   totalUsers: number;
   activeUsers: number;

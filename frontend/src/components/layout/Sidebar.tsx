@@ -33,6 +33,7 @@ const adminItems = [
   { to: '/admin/kudos', icon: MessageSquare, label: 'Kudos' },
   { to: '/admin/rules', icon: ScrollText, label: 'Regras' },
   { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/admin/communities', icon: Users, label: 'Comunidades' },
 ];
 
 export default function Sidebar() {
