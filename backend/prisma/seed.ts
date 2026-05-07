@@ -342,11 +342,11 @@ async function main() {
   const reactionData: Array<{ userId: string; postId: string; reactionType: ReactionType }> = [];
   const reactionTypes: ReactionType[] = ['FIRE', 'ROCKET', 'HEART', 'CLAP', 'BRAIN'];
 
-  createdPosts.slice(0, 25).forEach((post, i) => {
+  createdPosts.forEach((post, i) => {
     const reactors = all
       .filter((u) => u.id !== post.authorId)
       .sort(() => Math.random() - 0.5)
-      .slice(0, Math.floor(Math.random() * 5) + 2);
+      .slice(0, Math.floor(Math.random() * 7) + 3);
 
     reactors.forEach((u, j) => {
       const type = reactionTypes[(i + j) % reactionTypes.length];
@@ -354,6 +354,20 @@ async function main() {
         reactionData.push({ userId: u.id, postId: post.id, reactionType: type });
       }
     });
+
+    // Posts recentes têm mais reações variadas
+    if (i < 15) {
+      const bonusReactors = all
+        .filter((u) => u.id !== post.authorId)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+      bonusReactors.forEach((u, j) => {
+        const type = reactionTypes[(i + j + 2) % reactionTypes.length];
+        if (!reactionData.some((r) => r.userId === u.id && r.postId === post.id && r.reactionType === type)) {
+          reactionData.push({ userId: u.id, postId: post.id, reactionType: type });
+        }
+      });
+    }
   });
 
   await prisma.kudosReaction.createMany({ data: reactionData, skipDuplicates: true });
@@ -361,20 +375,48 @@ async function main() {
 
   // ─── Comments ────────────────────────────────────────────────────────────
   const commentsData = [
+    // Post 0 - Lucas bug crítico
     { postId: createdPosts[0].id, authorId: mateus.id, message: 'Merecia muito esse reconhecimento! 🚀' },
-    { postId: createdPosts[0].id, authorId: ana.id, message: 'Concordo 100%! Lucas arrasou!' },
-    { postId: createdPosts[1].id, authorId: lucas.id, message: 'Ana é incrível mesmo, referência de discovery!' },
-    { postId: createdPosts[1].id, authorId: fernanda.id, message: '👏👏 muito merecido!' },
+    { postId: createdPosts[0].id, authorId: ana.id, message: 'Concordo 100%! Lucas arrasou em tempo recorde!' },
+    { postId: createdPosts[0].id, authorId: gabriel.id, message: 'Cara, o Lucas salvou o dia mesmo. Chapéu!' },
+    // Post 1 - Ana discovery
+    { postId: createdPosts[1].id, authorId: lucas.id, message: 'Ana é incrível, referência de discovery na empresa toda!' },
+    { postId: createdPosts[1].id, authorId: fernanda.id, message: '👏👏 muito merecido! Ela transformou o caos em clareza.' },
+    { postId: createdPosts[1].id, authorId: mariana.id, message: 'Aprendo muito com a Ana sempre. Exemplo de PM!' },
+    // Post 2 - Carlos refactor
     { postId: createdPosts[2].id, authorId: mateus.id, message: 'Aquele PR foi magistral, aprendi muito vendo o código!' },
+    { postId: createdPosts[2].id, authorId: gustavo.id, message: 'Carlos eleva o nível de todo o time 🔥' },
+    // Post 3 - Fernanda campanha
     { postId: createdPosts[3].id, authorId: juliana.id, message: 'A campanha ficou incrível! Orgulho da Fernanda 🔥' },
-    { postId: createdPosts[4].id, authorId: thiago.id, message: 'Pedro é o cara! Esse contrato foi histórico!' },
+    { postId: createdPosts[3].id, authorId: felipe.id, message: 'As métricas foram absurdas. Fernanda é top demais!' },
+    // Post 4 - Pedro contrato
+    { postId: createdPosts[4].id, authorId: thiago.id, message: 'Pedro é o cara! Esse contrato foi histórico pra empresa!' },
+    { postId: createdPosts[4].id, authorId: amanda.id, message: 'Meses de trabalho duro resultando nisso 💪' },
+    // Post 5 - Camila onboarding
     { postId: createdPosts[5].id, authorId: isabela.id, message: 'Camila sempre elevando o bar do onboarding 💙' },
-    { postId: createdPosts[6].id, authorId: gabriel.id, message: '60% de redução? Isso é resultado de verdade!' },
+    { postId: createdPosts[5].id, authorId: beatriz.id, message: 'Tão orgulhosa do trabalho dela. Time People brilhando!' },
+    // Post 6 - Mateus cache
+    { postId: createdPosts[6].id, authorId: gabriel.id, message: '60% de redução? Isso é resultado de verdade, parabéns!' },
+    { postId: createdPosts[6].id, authorId: carlos.id, message: 'Solução elegante e com impacto real. Mateus é fora da curva.' },
+    // Post 7 - Larissa
     { postId: createdPosts[7].id, authorId: ana.id, message: 'Larissa é parceira demais. Exemplo pra toda a empresa!' },
+    // Post 10 - Gabriel mentor
     { postId: createdPosts[10].id, authorId: carlos.id, message: 'Gabriel mentor top! Meus juniores cresceram muito com ele 🧠' },
+    { postId: createdPosts[10].id, authorId: lucas.id, message: 'Ele pegou no meu calo várias vezes. Muito grato!' },
+    // Post 11 - Patricia
     { postId: createdPosts[11].id, authorId: rodrigo.id, message: 'Patricia salva vidas! Seria um baita erro sem ela.' },
+    // Post 15 - Isabela workshop
     { postId: createdPosts[15].id, authorId: camila.id, message: 'Isabela é a alma da cultura OTG ❤️' },
+    { postId: createdPosts[15].id, authorId: beatriz.id, message: 'Workshop mais incrível que já participei aqui!' },
+    // Post 16 - Gustavo pipeline
     { postId: createdPosts[16].id, authorId: mateus.id, message: 'Gustavo pipeline pra sempre! Deploy em 3 min é vida 🚀' },
+    { postId: createdPosts[16].id, authorId: carlos.id, message: 'Mudou completamente nosso workflow de entrega. Fantástico!' },
+    // Post 20+
+    { postId: createdPosts[20].id, authorId: larissa.id, message: 'Pedro sempre trazendo o cliente para o centro. Inspirador!' },
+    { postId: createdPosts[22].id, authorId: camila.id, message: 'Beatriz é a razão do Pulse existir! ❤️' },
+    { postId: createdPosts[24].id, authorId: patricia.id, message: 'Rodrigo automatizou o impossível. Que cérebro!' },
+    { postId: createdPosts[30].id, authorId: gustavo.id, message: 'Raphael é nossa maior referência técnica. Lenda!' },
+    { postId: createdPosts[31].id, authorId: isabela.id, message: 'Camila é insubstituível. People tem sorte enorme!' },
   ];
 
   await prisma.kudosComment.createMany({ data: commentsData, skipDuplicates: true });

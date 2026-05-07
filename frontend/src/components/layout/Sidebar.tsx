@@ -22,6 +22,7 @@ const navItems = [
   { to: '/galacticos', icon: Star, label: 'Galácticos' },
   { to: '/hall-of-fame', icon: Trophy, label: 'Hall da Fama' },
   { to: '/badges', icon: Award, label: 'Badges' },
+  { to: '/communities', icon: Users, label: 'Comunidades' },
   { to: '/profile', icon: User, label: 'Meu Perfil' },
 ];
 

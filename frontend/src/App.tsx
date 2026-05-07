@@ -8,6 +8,7 @@ import GalacticosPage from '@/pages/GalacticosPage';
 import ProfilePage from '@/pages/ProfilePage';
 import HallOfFamePage from '@/pages/HallOfFamePage';
 import BadgesPage from '@/pages/BadgesPage';
+import CommunitiesPage from '@/pages/CommunitiesPage';
 import AdminLayout from '@/pages/admin/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminUsers from '@/pages/admin/AdminUsers';
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="hall-of-fame" element={<HallOfFamePage />} />
         <Route path="badges" element={<BadgesPage />} />
+        <Route path="communities" element={<CommunitiesPage />} />
       </Route>
       <Route
         path="/admin"
