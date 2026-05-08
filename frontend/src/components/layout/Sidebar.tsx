@@ -31,6 +31,7 @@ const adminItems = [
   { to: '/admin/users', icon: Users, label: 'Usuários' },
   { to: '/admin/categories', icon: Tag, label: 'Categorias' },
   { to: '/admin/kudos', icon: MessageSquare, label: 'Kudos' },
+  { to: '/admin/badges', icon: Award, label: 'Badges' },
   { to: '/admin/rules', icon: ScrollText, label: 'Regras' },
   { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/admin/communities', icon: Users, label: 'Comunidades' },

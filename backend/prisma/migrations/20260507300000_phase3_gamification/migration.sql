@@ -1,8 +1,8 @@
 -- CreateEnum
 CREATE TYPE "BadgeRarity" AS ENUM ('COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY');
 
--- CreateEnum
-CREATE TYPE "ReactionType" AS ENUM ('FIRE', 'ROCKET', 'HEART', 'CLAP', 'BRAIN');
+-- CreateEnum (already created in add_communities migration)
+-- CREATE TYPE "ReactionType" AS ENUM ('FIRE', 'ROCKET', 'HEART', 'CLAP', 'BRAIN');
 
 -- CreateEnum
 CREATE TYPE "VoteType" AS ENUM ('TRUSTWORTHY', 'COOL', 'PROFESSIONAL');

@@ -34,4 +34,12 @@ export class BadgesService {
   create(data: { name: string; slug: string; description: string; icon: string; color: string; rarity: BadgeRarity }) {
     return this.prisma.badge.create({ data });
   }
+
+  update(id: string, data: Partial<{ name: string; slug: string; description: string; icon: string; color: string; rarity: BadgeRarity }>) {
+    return this.prisma.badge.update({ where: { id }, data });
+  }
+
+  delete(id: string) {
+    return this.prisma.badge.delete({ where: { id } });
+  }
 }

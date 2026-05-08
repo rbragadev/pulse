@@ -1,4 +1,7 @@
 -- CreateEnum
+CREATE TYPE "ReactionType" AS ENUM ('FIRE', 'ROCKET', 'HEART', 'CLAP', 'BRAIN');
+
+-- CreateEnum
 CREATE TYPE "CommunityVisibility" AS ENUM ('PUBLIC', 'PRIVATE');
 
 -- CreateEnum

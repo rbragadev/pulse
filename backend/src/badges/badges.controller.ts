@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Role, BadgeRarity } from '@prisma/client';
 import { BadgesService } from './badges.service';
@@ -42,5 +42,22 @@ export class BadgesController {
   @Roles(Role.ADMIN)
   revokeBadge(@Param('userId') userId: string, @Param('badgeId') badgeId: string) {
     return this.badgesService.revokeBadge(userId, badgeId);
+  }
+
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  update(
+    @Param('id') id: string,
+    @Body() body: Partial<{ name: string; slug: string; description: string; icon: string; color: string; rarity: BadgeRarity }>,
+  ) {
+    return this.badgesService.update(id, body);
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  deleteBadge(@Param('id') id: string) {
+    return this.badgesService.delete(id);
   }
 }

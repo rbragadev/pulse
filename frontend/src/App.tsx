@@ -18,6 +18,7 @@ import AdminKudos from '@/pages/admin/AdminKudos';
 import AdminRules from '@/pages/admin/AdminRules';
 import AdminAnalytics from '@/pages/admin/AdminAnalytics';
 import AdminCommunities from '@/pages/admin/AdminCommunities';
+import AdminBadges from '@/pages/admin/AdminBadges';
 
 function PrivateRoute({ children }: { readonly children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -70,6 +71,7 @@ export default function App() {
         <Route path="rules" element={<AdminRules />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="communities" element={<AdminCommunities />} />
+        <Route path="badges" element={<AdminBadges />} />
       </Route>
       <Route path="*" element={<Navigate to="/feed" replace />} />
     </Routes>
